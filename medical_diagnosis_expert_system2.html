@@ -1,0 +1,1350 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medical Diagnosis Expert System Simulation</title>
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+<style>
+:root{
+  --bg:#081321;
+  --panel:#12253c;
+  --line:#2c4968;
+  --text:#edf5ff;
+  --muted:#a6bad0;
+  --cyan:#4ce2ef;
+  --green:#49dfa0;
+  --yellow:#ffd166;
+  --orange:#ff9f43;
+  --red:#ff596d;
+  --purple:#b8a0ff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:linear-gradient(135deg,#07111e,#102641);
+  color:var(--text);
+  font-family:Arial,sans-serif;
+}
+header{
+  padding:16px 22px;
+  background:#091727;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+h1{font-size:clamp(20px,2.5vw,28px);margin:0}
+header p{color:var(--muted);font-size:12px;margin:5px 0 0}
+.tag{
+  font-size:10px;
+  border:1px solid #3a5c7b;
+  padding:7px 11px;
+  border-radius:20px;
+  color:#bceefa;
+  background:#102a40;
+}
+main{max-width:1700px;margin:auto;padding:14px}
+.layout{
+  display:grid;
+  grid-template-columns:280px minmax(430px,1fr) 340px;
+  gap:12px;
+  align-items:stretch;
+}
+.panel{
+  background:linear-gradient(160deg,#142943,#0d1b2d);
+  border:1px solid var(--line);
+  border-radius:13px;
+  overflow:hidden;
+  box-shadow:0 12px 30px #0004;
+}
+.head{
+  padding:12px 14px;
+  border-bottom:1px solid var(--line);
+  font-size:12px;
+  font-weight:bold;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+}
+.body{padding:13px}
+.muted{color:var(--muted);font-size:11px;line-height:1.5}
+.field{margin:0 0 11px}
+.field label{
+  display:block;
+  font-size:11px;
+  color:#c7d8eb;
+  margin-bottom:5px;
+}
+.field select{
+  width:100%;
+  background:#081727;
+  border:1px solid #35516e;
+  border-radius:7px;
+  padding:9px;
+  color:white;
+}
+.checks{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+}
+.check{
+  font-size:10px;
+  line-height:1.3;
+  background:#0a1a2c;
+  border:1px solid #29425e;
+  border-radius:7px;
+  padding:7px;
+  display:flex;
+  gap:6px;
+  align-items:flex-start;
+}
+.check input{accent-color:var(--cyan)}
+button{
+  border:0;
+  border-radius:7px;
+  padding:10px 12px;
+  font-weight:bold;
+  font-size:11px;
+  cursor:pointer;
+  background:var(--cyan);
+  color:#06202a;
+}
+button.alt{
+  background:#2a405b;
+  color:#e6f1ff;
+  border:1px solid #45617e;
+}
+button:disabled{opacity:.4;cursor:not-allowed}
+.buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.middle{display:flex;flex-direction:column;min-height:730px}
+.scene{
+  height:400px;
+  position:relative;
+  background:#a6c6d7;
+  overflow:hidden;
+}
+.scene a-scene{
+  position:absolute!important;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:1;
+}
+.overlay{
+  position:absolute;
+  z-index:3;
+  pointer-events:none;
+  background:#061525db;
+  border:1px solid #54718b;
+  border-radius:8px;
+  padding:7px 9px;
+  font-size:10px;
+}
+.sceneTitle{top:9px;left:9px}
+.sceneStatus{top:9px;right:9px;text-align:right}
+.sceneStatus b{
+  display:block;
+  font-size:14px;
+  margin-top:3px;
+  color:var(--green);
+}
+.sceneCaption{
+  position:absolute;
+  bottom:9px;
+  left:9px;
+  right:9px;
+  z-index:3;
+  background:#061525df;
+  border:1px solid #46617d;
+  border-radius:8px;
+  padding:8px 10px;
+  font-size:10px;
+  line-height:1.4;
+  pointer-events:none;
+}
+.simulationBar{
+  padding:10px 12px;
+  background:#0b1b2d;
+  border-top:1px solid var(--line);
+}
+.simLabel{
+  display:flex;
+  justify-content:space-between;
+  font-size:10px;
+  color:#bdd1e6;
+  margin-bottom:6px;
+}
+.progress{
+  height:8px;
+  background:#263d56;
+  border-radius:9px;
+  overflow:hidden;
+}
+.progress>div{
+  height:100%;
+  width:0;
+  background:linear-gradient(90deg,#43dcea,#4ce2a2);
+  transition:width .35s;
+}
+.pipeline{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:6px;
+  padding:10px 12px;
+  background:#0d2034;
+  border-top:1px solid var(--line);
+}
+.stage{
+  border:1px solid #304c69;
+  border-radius:8px;
+  padding:7px 5px;
+  text-align:center;
+  font-size:9px;
+  color:#9eb4ca;
+  background:#10243a;
+  min-height:43px;
+}
+.stage.active{
+  border-color:var(--cyan);
+  background:#16445a;
+  color:#fff;
+  box-shadow:0 0 12px #36d9e855;
+}
+.stage.done{border-color:#3ba77e;color:#80efbd}
+.stage b{display:block;font-size:9px;margin-bottom:3px}
+.middleFoot{
+  padding:9px 12px;
+  font-size:10px;
+  color:#adc1d7;
+  background:#0a1929;
+  line-height:1.4;
+}
+.rightBody{display:flex;flex-direction:column;gap:11px}
+.result{
+  border:1px solid #35516e;
+  border-radius:9px;
+  background:#091a2b;
+  padding:11px;
+}
+.resultTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:6px;
+}
+.resultTop strong{font-size:12px}
+.badge{
+  border-radius:20px;
+  padding:5px 9px;
+  font-size:9px;
+  font-weight:bold;
+  background:#344a62;
+}
+.badge.EMERGENCY{background:#601f31;color:#ffabb6}
+.badge.CLINICAL{background:#40346b;color:#d5c9ff}
+.badge.ROUTINE{background:#124b3a;color:#85f3c0}
+.badge.REVIEW{background:#58451a;color:#ffe18e}
+.result p{
+  font-size:11px;
+  color:#c2d2e4;
+  line-height:1.5;
+  margin:9px 0 0;
+}
+.sectionTitle{
+  font-size:11px;
+  font-weight:bold;
+  margin-bottom:7px;
+  color:#e2efff;
+}
+.ruleStack{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  max-height:270px;
+  overflow:auto;
+}
+.rule{
+  padding:7px 8px;
+  background:#091a2a;
+  border:1px solid #2b4561;
+  border-radius:7px;
+  font-size:10px;
+  transition:.2s;
+}
+.rule.checking{
+  border-color:var(--yellow);
+  background:#403719;
+  box-shadow:0 0 10px #ffd16644;
+  transform:translateX(-2px);
+}
+.rule.fired{border-color:#3db987;background:#10382f}
+.rule.missed{opacity:.55}
+.ruleLine{display:flex;justify-content:space-between;gap:7px}
+.rule small{
+  display:block;
+  color:#a9bdd2;
+  margin-top:4px;
+  line-height:1.35;
+}
+.state{font-size:9px;font-weight:bold;color:#9aafc4}
+.rule.fired .state{color:var(--green)}
+.rule.checking .state{color:var(--yellow)}
+.explain{
+  font-size:10px;
+  line-height:1.5;
+  white-space:pre-line;
+  color:#c7d7e9;
+  max-height:160px;
+  overflow:auto;
+  background:#091a2a;
+  border:1px solid #29425e;
+  border-radius:7px;
+  padding:9px;
+}
+.kbAdd{display:flex;gap:5px;margin-top:7px}
+.kbAdd select{
+  min-width:0;
+  flex:1;
+  background:#091727;
+  color:white;
+  border:1px solid #35516e;
+  border-radius:6px;
+  padding:7px;
+  font-size:10px;
+}
+.note{font-size:10px;color:#9eb3ca;line-height:1.45;margin-top:7px}
+.lower{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:12px;
+}
+.log{
+  background:#091a2a;
+  border:1px solid #29425e;
+  border-radius:7px;
+  padding:9px;
+  min-height:125px;
+  max-height:170px;
+  overflow:auto;
+  font:10px/1.55 Consolas,monospace;
+  color:#c4d5e8;
+}
+.log div{padding:2px 0;border-bottom:1px solid #1e344b}
+.ok{color:var(--green)}
+.warn{color:var(--yellow)}
+.bad{color:#ff8797}
+.tokenArea{display:flex;gap:5px;flex-wrap:wrap;min-height:28px}
+.token{
+  font-size:9px;
+  padding:5px 7px;
+  border:1px solid #39708b;
+  background:#10334a;
+  color:#c8f7ff;
+  border-radius:15px;
+}
+footer{
+  text-align:center;
+  color:#849bb4;
+  font-size:10px;
+  padding:16px;
+}
+@media(max-width:1150px){
+  .layout{grid-template-columns:260px minmax(400px,1fr)}
+  .right{grid-column:1/-1}
+  .rightBody{display:grid;grid-template-columns:1fr 1fr}
+  .rightBody .result{grid-column:1/-1}
+}
+@media(max-width:760px){
+  main{padding:8px}
+  .layout{grid-template-columns:1fr}
+  .middle{grid-row:1;min-height:0}
+  .scene{height:350px}
+  .right{grid-column:auto}
+  .rightBody{display:flex}
+  .lower{grid-template-columns:1fr}
+  .pipeline{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div>
+    <h1>Medical Diagnosis Expert System</h1>
+    <p>Animated patient assessment, medical knowledge base and rule-based inference</p>
+  </div>
+  <div class="tag">3D CLINIC · EXPERT SYSTEM SIMULATION</div>
+</header>
+
+<main>
+<div class="layout">
+
+<!-- USER INTERFACE -->
+<section class="panel">
+  <div class="head">1 · Patient interface <span class="tag">INPUT</span></div>
+  <div class="body">
+    <p class="muted">
+      Enter the patient's reported symptoms. The system will store these facts
+      in working memory and evaluate its medical knowledge base.
+    </p>
+
+    <div class="field">
+      <label>Patient reference</label>
+      <select id="patient">
+        <option>Patient A</option>
+        <option>Patient B</option>
+        <option>Patient C</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Duration of symptoms</label>
+      <select id="duration">
+        <option value="short">Less than 3 days</option>
+        <option value="medium">3–7 days</option>
+        <option value="long">More than 7 days</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Reported symptoms</label>
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="fever"> Fever</label>
+        <label class="check"><input type="checkbox" id="cough"> Cough</label>
+        <label class="check"><input type="checkbox" id="sore"> Sore throat</label>
+        <label class="check"><input type="checkbox" id="runny"> Runny nose</label>
+        <label class="check"><input type="checkbox" id="sneeze"> Sneezing</label>
+        <label class="check"><input type="checkbox" id="itchy"> Itchy eyes</label>
+        <label class="check"><input type="checkbox" id="aches"> Body aches</label>
+        <label class="check"><input type="checkbox" id="fatigue"> Fatigue</label>
+        <label class="check"><input type="checkbox" id="nausea"> Nausea</label>
+        <label class="check"><input type="checkbox" id="vomiting"> Vomiting</label>
+        <label class="check"><input type="checkbox" id="diarrhea"> Diarrhoea</label>
+        <label class="check"><input type="checkbox" id="stomach"> Stomach cramps</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Emergency warning signs</label>
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="breathing"> Difficulty breathing</label>
+        <label class="check"><input type="checkbox" id="chest"> Chest pain</label>
+        <label class="check"><input type="checkbox" id="confusion"> New confusion</label>
+        <label class="check"><input type="checkbox" id="dehydration"> Severe dehydration</label>
+        <label class="check"><input type="checkbox" id="blue"> Blue/grey lips or skin</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Load a ready-made case study</label>
+      <select id="scenario">
+        <option value="">Select a case…</option>
+        <option value="cold">A · Cold-like symptoms</option>
+        <option value="flu">B · Flu-like symptoms</option>
+        <option value="allergy">C · Allergy-like symptoms</option>
+        <option value="stomach">D · Gastrointestinal symptoms</option>
+        <option value="emergency">E · Emergency warning signs</option>
+        <option value="unknown">F · Incomplete information</option>
+      </select>
+    </div>
+
+    <div class="buttons">
+      <button id="start">▶ Start examination</button>
+      <button class="alt" id="step">Next step</button>
+      <button class="alt" id="reset">Reset</button>
+    </div>
+
+    <p class="note">
+      Use Next step to demonstrate each inference operation slowly.
+      Start examination runs the simulation automatically.
+    </p>
+  </div>
+</section>
+
+<!-- CENTRAL 3D CLINIC -->
+<section class="panel middle">
+  <div class="head">2 · 3D medical examination <span class="tag">WATCH THE PATIENT</span></div>
+
+  <div class="scene">
+    <div class="overlay sceneTitle">
+      MEDICAL CLINIC<br><b id="clinicName">PATIENT ASSESSMENT ROOM</b>
+    </div>
+
+    <div class="overlay sceneStatus">
+      SYSTEM STATUS
+      <b id="sceneDecision">WAITING</b>
+    </div>
+
+    <a-scene
+      embedded
+      vr-mode-ui="enabled:false"
+      renderer="antialias:true;colorManagement:true"
+      background="color:#b8d5df">
+
+      <a-sky color="#b8d5df"></a-sky>
+
+      <a-light type="ambient" intensity=".85"></a-light>
+      <a-light type="directional" position="-4 8 5" intensity="1"></a-light>
+
+      <!-- Clinic floor -->
+      <a-plane rotation="-90 0 0" width="30" height="30" color="#d7e2e8"></a-plane>
+
+      <!-- Back wall -->
+      <a-box position="0 2.5 -9" width="22" height="5" depth=".3" color="#d5e8ef"></a-box>
+
+      <!-- Clinic windows -->
+      <a-box position="-6 3.1 -8.78" width="3" height="1.8" depth=".05" color="#75b5d0"></a-box>
+      <a-box position="-2 3.1 -8.78" width="3" height="1.8" depth=".05" color="#75b5d0"></a-box>
+
+      <!-- Medical sign -->
+      <a-box position="5 3.8 -8.75" width="3.2" height="1" depth=".12" color="#176b69"></a-box>
+      <a-text value="MEDICAL CLINIC" position="3.8 3.7 -8.65" width="5" color="#ffffff"></a-text>
+
+      <!-- Examination desk -->
+      <a-box position="-5 1 -3" width="2.5" height="1.2" depth="1.3" color="#a77b54"></a-box>
+      <a-box position="-5 .35 -3" width="2.3" height=".3" depth="1.2" color="#805a3e"></a-box>
+      <a-box position="-5 1.7 -3" width="1.2" height=".15" depth=".8" color="#edf4f6"></a-box>
+
+      <!-- Examination bed -->
+      <a-box position="4 .8 -4" width="3.5" height=".35" depth="1.5" color="#edf5f8"></a-box>
+      <a-box position="4 .35 -4" width="3.3" height=".6" depth="1.3" color="#527b91"></a-box>
+      <a-box position="4 .45 -4" width=".15" height=".9" depth=".15" color="#647987"></a-box>
+      <a-box position="5.5 .45 -4" width=".15" height=".9" depth=".15" color="#647987"></a-box>
+
+      <!-- Medical monitor -->
+      <a-box position="6 2.2 -5" width="1.4" height="1" depth=".2" color="#263c4a"></a-box>
+      <a-plane position="6 2.2 -4.88" width="1.2" height=".8" color="#071c27"></a-plane>
+      <a-text value="HEALTH MONITOR" position="5.45 2.55 -4.85" width="2" color="#4ce2a2"></a-text>
+
+      <!-- Monitor pulse line -->
+      <a-entity id="pulse">
+        <a-box position="5.65 2.15 -4.84" width=".2" height=".04" depth=".02" color="#49dfa0"></a-box>
+        <a-box position="5.85 2.25 -4.84" width=".04" height=".2" depth=".02" color="#49dfa0"></a-box>
+        <a-box position="6.05 2.15 -4.84" width=".3" height=".04" depth=".02" color="#49dfa0"></a-box>
+        <a-box position="6.3 2.15 -4.84" width=".25" height=".04" depth=".02" color="#49dfa0"></a-box>
+      </a-entity>
+
+      <!-- Doctor -->
+      <a-entity id="doctor" position="-2 0 -5">
+        <a-cylinder position="0 1.2 0" radius=".3" height="1" color="#ffffff"></a-cylinder>
+        <a-sphere position="0 1.9 0" radius=".25" color="#9b7052"></a-sphere>
+        <a-cylinder position="-.13 .48 0" radius=".1" height=".6" color="#26384c"></a-cylinder>
+        <a-cylinder position=".13 .48 0" radius=".1" height=".6" color="#26384c"></a-cylinder>
+        <a-cylinder position="-.35 1.2 0" radius=".08" height=".65" color="#9b7052" rotation="0 0 15"></a-cylinder>
+        <a-cylinder position=".35 1.2 0" radius=".08" height=".65" color="#9b7052" rotation="0 0 -15"></a-cylinder>
+        <a-box position="0 1.2 .17" width=".12" height=".25" depth=".04" color="#4ce2ef"></a-box>
+        <a-text value="DOCTOR" position="-.55 2.3 0" width="2.5" color="#17394d"></a-text>
+      </a-entity>
+
+      <!-- Patient -->
+      <a-entity id="patientFigure" position="0 0 8">
+        <a-sphere position="0 1.75 0" radius=".23" color="#986747"></a-sphere>
+        <a-cylinder position="0 1.15 0" radius=".25" height=".9" color="#2776a5"></a-cylinder>
+
+        <a-entity id="leftLeg" position="-.13 .72 0">
+          <a-cylinder position="0 -.25 0" radius=".075" height=".52" color="#24364c"></a-cylinder>
+        </a-entity>
+
+        <a-entity id="rightLeg" position=".13 .72 0">
+          <a-cylinder position="0 -.25 0" radius=".075" height=".52" color="#24364c"></a-cylinder>
+        </a-entity>
+
+        <a-entity id="leftArm" position="-.3 1.35 0">
+          <a-cylinder position="0 -.22 0" radius=".065" height=".48" color="#986747"></a-cylinder>
+        </a-entity>
+
+        <a-entity id="rightArm" position=".3 1.35 0">
+          <a-cylinder position="0 -.22 0" radius=".065" height=".48" color="#986747"></a-cylinder>
+        </a-entity>
+
+        <a-text value="PATIENT" position="-.65 2.15 0" width="3" color="#17394d"></a-text>
+      </a-entity>
+
+      <!-- Symptoms represented by visible floating symbols -->
+      <a-entity id="symptomVisuals" position="0 0 -1"></a-entity>
+
+      <!-- Diagnostic result board -->
+      <a-entity position="0 0 -8">
+        <a-box position="0 2.1 0" width="4.2" height="1.5" depth=".15" color="#17384e"></a-box>
+        <a-text value="EXPERT SYSTEM" position="-1.7 2.55 .1" width="4" color="#4ce2ef"></a-text>
+        <a-text id="boardResult" value="AWAITING ASSESSMENT" position="-1.7 2.1 .1" width="4" color="#ffffff"></a-text>
+      </a-entity>
+
+      <!-- Camera -->
+      <a-camera
+        position="0 6.7 18"
+        rotation="-14 0 0"
+        look-controls="enabled:false"
+        wasd-controls="enabled:false"
+        fov="60">
+      </a-camera>
+
+    </a-scene>
+
+    <div class="sceneCaption" id="sceneCaption">
+      Waiting for a patient. Start an examination to watch the patient enter the clinic and the expert system begin its assessment.
+    </div>
+  </div>
+
+  <div class="simulationBar">
+    <div class="simLabel">
+      <span id="simMessage">Simulation ready</span>
+      <span id="percent">0%</span>
+    </div>
+    <div class="progress"><div id="progressFill"></div></div>
+  </div>
+
+  <div class="pipeline">
+    <div class="stage" id="stage1"><b>01 · INPUT</b>Symptoms</div>
+    <div class="stage" id="stage2"><b>02 · MEMORY</b>Patient facts</div>
+    <div class="stage" id="stage3"><b>03 · KNOWLEDGE</b>Medical rules</div>
+    <div class="stage" id="stage4"><b>04 · INFERENCE</b>Rule matching</div>
+    <div class="stage" id="stage5"><b>05 · OUTPUT</b>Explanation</div>
+  </div>
+
+  <div class="middleFoot">
+    <b>Observe:</b> The patient enters the clinic, symptoms appear as visual tokens,
+    and the doctor represents the consultation process. The inference engine then
+    checks the rules and updates the diagnostic board.
+  </div>
+</section>
+
+<!-- KNOWLEDGE BASE AND OUTPUT -->
+<section class="panel right">
+  <div class="head">3 · Knowledge & inference <span class="tag">RULE ENGINE</span></div>
+  <div class="body rightBody">
+
+    <div class="result">
+      <div class="resultTop">
+        <strong>Assessment result</strong>
+        <span id="riskBadge" class="badge">WAITING</span>
+      </div>
+      <p id="resultText">Enter symptoms and start the examination.</p>
+    </div>
+
+    <div>
+      <div class="sectionTitle">Medical knowledge base — rules</div>
+      <div class="ruleStack" id="rules"></div>
+    </div>
+
+    <div>
+      <div class="sectionTitle">Explanation facility</div>
+      <div class="explain" id="explanation">
+        The system will explain which symptoms matched which rules and how it reached its conclusion.
+      </div>
+    </div>
+
+    <div>
+      <div class="sectionTitle">Knowledge acquisition — add a rule</div>
+      <div class="muted">Add a teaching rule to the knowledge base.</div>
+      <div class="kbAdd">
+        <select id="newFact">
+          <option value="fever">Fever</option>
+          <option value="cough">Cough</option>
+          <option value="vomiting">Vomiting</option>
+          <option value="diarrhea">Diarrhoea</option>
+          <option value="sneeze">Sneezing</option>
+          <option value="aches">Body aches</option>
+        </select>
+        <select id="newLevel">
+          <option value="REVIEW">Review</option>
+          <option value="CLINICAL">Clinical assessment</option>
+        </select>
+        <button id="addRule">Add</button>
+      </div>
+      <div class="note" id="kbCount">9 core rules in the knowledge base.</div>
+    </div>
+
+  </div>
+</section>
+</div>
+
+<!-- WORKING MEMORY AND ACTIVITY LOG -->
+<div class="lower">
+
+  <section class="panel">
+    <div class="head">4 · Working memory <span class="tag">PATIENT FACTS</span></div>
+    <div class="body">
+      <div class="muted">
+        Symptoms and patient information are stored here before the inference engine evaluates the rules.
+      </div>
+      <div id="tokens" class="tokenArea" style="margin-top:9px">
+        <span class="muted">No patient facts stored.</span>
+      </div>
+      <div id="memoryLog" class="log" style="margin-top:9px">
+        Working memory is empty.
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="head">5 · Inference engine activity <span class="tag">LIVE TRACE</span></div>
+    <div class="body">
+      <div id="activity" class="log">
+        Medical expert system initialised. Waiting for patient information.
+      </div>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<footer>
+  Educational demonstration only. This system does not diagnose real patients or replace a qualified healthcare professional.
+  Emergency symptoms require urgent medical attention.
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const symptomLabels = {
+  fever:'Fever',
+  cough:'Cough',
+  sore:'Sore throat',
+  runny:'Runny nose',
+  sneeze:'Sneezing',
+  itchy:'Itchy eyes',
+  aches:'Body aches',
+  fatigue:'Fatigue',
+  nausea:'Nausea',
+  vomiting:'Vomiting',
+  diarrhea:'Diarrhoea',
+  stomach:'Stomach cramps',
+  breathing:'Difficulty breathing',
+  chest:'Chest pain',
+  confusion:'New confusion',
+  dehydration:'Severe dehydration',
+  blue:'Blue/grey lips or skin'
+};
+
+let customRules = [];
+let caseData = null;
+let matchedRules = [];
+let cursor = 0;
+let timer = null;
+let isRunning = false;
+
+const coreRules = [
+
+{
+  id:'R1',
+  name:'Emergency warning signs',
+  outcome:'EMERGENCY',
+  description:'One or more serious warning signs are reported.',
+  test:f=>f.breathing || f.chest || f.confusion || f.dehydration || f.blue
+},
+
+{
+  id:'R2',
+  name:'Influenza-like illness pattern',
+  outcome:'CLINICAL',
+  description:'Fever, cough and body aches are reported together.',
+  test:f=>f.fever && f.cough && f.aches
+},
+
+{
+  id:'R3',
+  name:'Common cold-like pattern',
+  outcome:'CLINICAL',
+  description:'Runny nose, cough or sore throat with no emergency warning sign.',
+  test:f=>(f.runny || f.sore) && (f.cough || f.sore) && !f.itchy
+},
+
+{
+  id:'R4',
+  name:'Allergy-like pattern',
+  outcome:'CLINICAL',
+  description:'Sneezing, runny nose and itchy eyes occur together without fever.',
+  test:f=>f.sneeze && f.runny && f.itchy && !f.fever
+},
+
+{
+  id:'R5',
+  name:'Gastrointestinal illness pattern',
+  outcome:'CLINICAL',
+  description:'Vomiting or diarrhoea occurs with nausea or stomach cramps.',
+  test:f=>(f.vomiting || f.diarrhea) && (f.nausea || f.stomach)
+},
+
+{
+  id:'R6',
+  name:'Fever and fatigue',
+  outcome:'REVIEW',
+  description:'Fever and fatigue are reported without a more specific pattern.',
+  test:f=>f.fever && f.fatigue
+},
+
+{
+  id:'R7',
+  name:'Multiple symptoms',
+  outcome:'REVIEW',
+  description:'Several symptoms are reported, but no specific pattern is established.',
+  test:f=>Object.keys(symptomLabels).filter(k=>f[k]).length>=3
+},
+
+{
+  id:'R8',
+  name:'Insufficient clinical information',
+  outcome:'REVIEW',
+  description:'No clear symptom pattern is established.',
+  test:f=>Object.keys(symptomLabels).filter(k=>f[k]).length===0
+},
+
+{
+  id:'R9',
+  name:'Mild symptom monitoring',
+  outcome:'ROUTINE',
+  description:'Only a limited set of mild symptoms is reported and no warning sign is selected.',
+  test:f=>{
+    const n=Object.keys(symptomLabels).filter(k=>f[k]).length;
+    return n>0 && n<=2 &&
+    !f.breathing && !f.chest && !f.confusion &&
+    !f.dehydration && !f.blue;
+  }
+}
+
+];
+
+const priority={
+  ROUTINE:1,
+  REVIEW:2,
+  CLINICAL:3,
+  EMERGENCY:4
+};
+
+function allRules(){
+  return [...coreRules,...customRules];
+}
+
+function log(id,message,cls=''){
+  const div=document.createElement('div');
+  div.textContent=message;
+  if(cls)div.className=cls;
+  $(id).appendChild(div);
+  $(id).scrollTop=$(id).scrollHeight;
+}
+
+function collectFacts(){
+  const f={
+    patient:$('patient').value,
+    duration:$('duration').value
+  };
+
+  Object.keys(symptomLabels).forEach(k=>{
+    f[k]=$(k).checked;
+  });
+
+  return f;
+}
+
+function getSymptomCount(f){
+  return Object.keys(symptomLabels).filter(k=>f[k]).length;
+}
+
+function factsList(f){
+  const facts=[
+    'Patient reference: '+f.patient,
+    'Symptom duration: '+f.duration
+  ];
+
+  Object.keys(symptomLabels).forEach(k=>{
+    if(f[k])facts.push(symptomLabels[k]);
+  });
+
+  if(getSymptomCount(f)===0){
+    facts.push('No symptoms selected');
+  }
+
+  return facts;
+}
+
+function setStage(n){
+  for(let i=1;i<=5;i++){
+    $('stage'+i).classList.toggle('active',i===n);
+    $('stage'+i).classList.toggle('done',i<n);
+  }
+}
+
+function updateProgress(p,message){
+  $('progressFill').style.width=p+'%';
+  $('percent').textContent=p+'%';
+  $('simMessage').textContent=message;
+}
+
+function renderRules(){
+  const host=$('rules');
+  host.innerHTML='';
+
+  allRules().forEach(r=>{
+    const d=document.createElement('div');
+    d.className='rule';
+    d.id='rule_'+r.id;
+
+    const left=document.createElement('b');
+    left.textContent=r.id+' · '+r.name;
+
+    const state=document.createElement('span');
+    state.className='state';
+    state.textContent='WAITING';
+
+    const line=document.createElement('div');
+    line.className='ruleLine';
+    line.append(left,state);
+
+    const small=document.createElement('small');
+    small.textContent='IF condition is true THEN '+r.outcome+'.';
+
+    d.append(line,small);
+    host.appendChild(d);
+  });
+}
+
+function showTokens(f){
+  $('tokens').innerHTML='';
+
+  factsList(f).forEach(fact=>{
+    const span=document.createElement('span');
+    span.className='token';
+    span.textContent=fact;
+    $('tokens').appendChild(span);
+  });
+}
+
+function showSymptomObjects(f){
+  const host=$('symptomVisuals');
+  host.innerHTML='';
+
+  const selected=Object.keys(symptomLabels).filter(k=>f[k]);
+
+  selected.slice(0,8).forEach((k,i)=>{
+    const x=-4+(i%4)*2.5;
+    const z=-1-Math.floor(i/4)*1.4;
+
+    const box=document.createElement('a-entity');
+    box.setAttribute('position',`${x} ${2.6+(i%2)*.3} ${z}`);
+
+    const sphere=document.createElement('a-sphere');
+    sphere.setAttribute('radius','.22');
+    sphere.setAttribute('color',i%2===0?'#43bde0':'#46bd8d');
+
+    const text=document.createElement('a-text');
+    text.setAttribute('value',symptomLabels[k]);
+    text.setAttribute('position','-.65 .35 0');
+    text.setAttribute('width','3');
+    text.setAttribute('color','#163d52');
+
+    box.append(sphere,text);
+    host.appendChild(box);
+  });
+}
+
+function setupScene(f){
+  $('patientFigure').setAttribute('position','0 0 8');
+  $('boardResult').setAttribute('value','AWAITING ASSESSMENT');
+  $('clinicName').textContent=f.patient.toUpperCase()+' — CONSULTATION';
+
+  showSymptomObjects(f);
+}
+
+function animatePatient(){
+  const p=$('patientFigure');
+
+  p.setAttribute('animation__walk',{
+    property:'position',
+    to:'0 0 -1.5',
+    dur:6500,
+    easing:'linear'
+  });
+
+  ['leftLeg','rightArm'].forEach(id=>{
+    $(id).setAttribute('animation__swing',{
+      property:'rotation',
+      from:'-25 0 0',
+      to:'25 0 0',
+      dir:'alternate',
+      loop:true,
+      dur:420
+    });
+  });
+
+  ['rightLeg','leftArm'].forEach(id=>{
+    $(id).setAttribute('animation__swing',{
+      property:'rotation',
+      from:'25 0 0',
+      to:'-25 0 0',
+      dir:'alternate',
+      loop:true,
+      dur:420
+    });
+  });
+}
+
+function stopPatient(){
+  $('patientFigure').removeAttribute('animation__walk');
+
+  ['leftLeg','rightLeg','leftArm','rightArm'].forEach(id=>{
+    $(id).removeAttribute('animation__swing');
+  });
+}
+
+function evaluateRule(i){
+  const rules=allRules();
+
+  if(i>=rules.length){
+    finishAssessment();
+    return;
+  }
+
+  const rule=rules[i];
+  const element=$('rule_'+rule.id);
+  const isMatched=!!rule.test(caseData);
+
+  element.classList.add('checking');
+  element.querySelector('.state').textContent='CHECKING…';
+
+  updateProgress(
+    Math.round(42+(i+1)/rules.length*48),
+    'Inference engine checking '+rule.id
+  );
+
+  $('sceneCaption').textContent=
+    'The inference engine is checking '+rule.id+': '+rule.name+
+    '. It compares the IF condition against facts in working memory.';
+
+  log('activity',
+    '[INFERENCE] Evaluating '+rule.id+': '+rule.name
+  );
+
+  timer=setTimeout(()=>{
+    element.classList.remove('checking');
+
+    if(isMatched){
+      element.classList.add('fired');
+      element.querySelector('.state').textContent='RULE FIRED';
+
+      matchedRules.push(rule);
+
+      log('activity',
+        '[RULE FIRED] '+rule.id+' → '+rule.outcome+
+        '. '+rule.description,
+        'ok'
+      );
+
+    }else{
+      element.classList.add('missed');
+      element.querySelector('.state').textContent='NOT MATCHED';
+
+      log('activity',
+        '[NOT FIRED] '+rule.id+
+        ': condition is false.'
+      );
+    }
+
+    cursor++;
+
+    if(isRunning){
+      timer=setTimeout(()=>evaluateRule(cursor),650);
+    }
+
+  },750);
+}
+
+function finishAssessment(){
+  isRunning=false;
+  timer=null;
+
+  let outcome='REVIEW';
+
+  if(matchedRules.length){
+    outcome=matchedRules
+      .map(r=>r.outcome)
+      .sort((a,b)=>priority[b]-priority[a])[0];
+  }
+
+  const explanations={
+    EMERGENCY:
+      'A serious warning sign was selected. This simulation recommends urgent medical assessment or emergency assistance. Do not delay seeking help.',
+
+    CLINICAL:
+      'The reported symptoms match one or more illustrative clinical patterns. A qualified healthcare professional must assess the patient to establish the cause.',
+
+    REVIEW:
+      'The selected symptoms do not establish a clear pattern, or there is insufficient information. Further clinical assessment is needed.',
+
+    ROUTINE:
+      'The selected symptoms did not match the major patterns in this demonstration. Monitor the patient and seek professional advice if symptoms persist or worsen.'
+  };
+
+  const message=explanations[outcome];
+
+  $('riskBadge').textContent=outcome;
+  $('riskBadge').className='badge '+outcome;
+
+  $('resultText').textContent=message;
+
+  $('sceneDecision').textContent=outcome;
+  $('boardResult').setAttribute('value',outcome);
+
+  const colours={
+    EMERGENCY:'#ff596d',
+    CLINICAL:'#b8a0ff',
+    REVIEW:'#ffd166',
+    ROUTINE:'#49dfa0'
+  };
+
+  $('sceneDecision').style.color=colours[outcome];
+
+  $('explanation').textContent=
+    'PATIENT: '+caseData.patient+
+    '\n\nFACTS IN WORKING MEMORY\n'+
+    factsList(caseData).map(x=>'• '+x).join('\n')+
+    '\n\nRULES THAT FIRED\n'+
+    (matchedRules.length
+      ?matchedRules.map(r=>'• '+r.id+': '+r.name+' → '+r.outcome).join('\n')
+      :'• No rule matched.')+
+    '\n\nFINAL SYSTEM OUTPUT: '+outcome+
+    '\n\nEXPLANATION\n'+message+
+    '\n\nThe system selects the highest-priority outcome among the rules that fired.';
+
+  $('sceneCaption').textContent=
+    'Assessment complete. The inference engine has checked all rules. '+
+    matchedRules.length+' rule(s) fired. The result is displayed on the diagnostic board.';
+
+  updateProgress(100,'Assessment complete — explanation generated');
+  setStage(5);
+
+  stopPatient();
+
+  log('activity','[DECISION] Final output = '+outcome,'warn');
+  log('activity','[EXPLANATION] Conclusion linked to matched rules and stored facts.','ok');
+}
+
+function beginAssessment(){
+  if(timer)clearTimeout(timer);
+
+  isRunning=true;
+  caseData=collectFacts();
+  matchedRules=[];
+  cursor=0;
+
+  renderRules();
+  setupScene(caseData);
+
+  $('memoryLog').innerHTML='';
+  $('activity').innerHTML='';
+
+  log('activity','[USER INTERFACE] Patient information submitted.','ok');
+
+  $('tokens').innerHTML='';
+  showTokens(caseData);
+
+  factsList(caseData).forEach(fact=>{
+    log('memoryLog','FACT STORED: '+fact);
+  });
+
+  $('riskBadge').textContent='PROCESSING';
+  $('riskBadge').className='badge';
+
+  $('resultText').textContent=
+    'The expert system is collecting symptoms and evaluating its knowledge base.';
+
+  $('explanation').textContent=
+    'Waiting for inference engine to complete rule evaluation.';
+
+  animatePatient();
+
+  setStage(1);
+  updateProgress(5,'Collecting patient information');
+
+  $('sceneCaption').textContent=
+    'The patient is walking into the consultation room. The system is receiving the reported symptoms.';
+
+  timer=setTimeout(()=>{
+    setStage(2);
+    updateProgress(20,'Storing symptoms in working memory');
+
+    log('activity',
+      '[WORKING MEMORY] Patient facts successfully stored.',
+      'ok'
+    );
+
+    $('sceneCaption').textContent=
+      'Symptoms are stored in working memory. The system now has the facts needed to evaluate the medical rules.';
+
+    timer=setTimeout(()=>{
+      setStage(3);
+
+      updateProgress(38,'Loading medical knowledge base');
+
+      log('activity',
+        '[KNOWLEDGE BASE] '+allRules().length+' IF–THEN rules loaded.',
+        'ok'
+      );
+
+      $('sceneCaption').textContent=
+        'The medical knowledge base is ready. The inference engine will now check each rule.';
+
+      setStage(4);
+      timer=setTimeout(()=>evaluateRule(cursor),600);
+
+    },900);
+
+  },1000);
+}
+
+function nextStep(){
+  if(!caseData){
+    beginAssessment();
+    return;
+  }
+
+  if(timer){
+    clearTimeout(timer);
+    timer=null;
+  }
+
+  if(cursor<allRules().length){
+    isRunning=true;
+    evaluateRule(cursor);
+  }else{
+    finishAssessment();
+  }
+}
+
+function resetSimulation(){
+  if(timer)clearTimeout(timer);
+
+  timer=null;
+  isRunning=false;
+  caseData=null;
+  matchedRules=[];
+  cursor=0;
+
+  stopPatient();
+
+  $('patientFigure').setAttribute('position','0 0 8');
+  $('symptomVisuals').innerHTML='';
+
+  $('sceneDecision').textContent='WAITING';
+  $('sceneDecision').style.color='#49dfa0';
+
+  $('boardResult').setAttribute('value','AWAITING ASSESSMENT');
+
+  $('sceneCaption').textContent=
+    'Waiting for a patient. Start an examination to watch the patient enter the clinic and the expert system begin its assessment.';
+
+  $('riskBadge').textContent='WAITING';
+  $('riskBadge').className='badge';
+
+  $('resultText').textContent='Enter symptoms and start the examination.';
+
+  $('explanation').textContent=
+    'The system will explain which symptoms matched which rules and how it reached its conclusion.';
+
+  $('tokens').innerHTML='<span class="muted">No patient facts stored.</span>';
+  $('memoryLog').textContent='Working memory is empty.';
+  $('activity').textContent='System reset. Waiting for patient information.';
+
+  updateProgress(0,'Simulation ready');
+
+  for(let i=1;i<=5;i++){
+    $('stage'+i).className='stage';
+  }
+
+  renderRules();
+}
+
+const scenarios={
+  cold:{
+    checks:['cough','runny','sore'],
+    duration:'short'
+  },
+
+  flu:{
+    checks:['fever','cough','aches','fatigue'],
+    duration:'medium'
+  },
+
+  allergy:{
+    checks:['sneeze','runny','itchy'],
+    duration:'long'
+  },
+
+  stomach:{
+    checks:['nausea','vomiting','diarrhea','stomach'],
+    duration:'short'
+  },
+
+  emergency:{
+    checks:['fever','cough','breathing','chest'],
+    duration:'short'
+  },
+
+  unknown:{
+    checks:[],
+    duration:'short'
+  }
+};
+
+$('scenario').addEventListener('change',e=>{
+  const scenario=scenarios[e.target.value];
+
+  if(!scenario)return;
+
+  Object.keys(symptomLabels).forEach(k=>{
+    $(k).checked=false;
+  });
+
+  scenario.checks.forEach(k=>{
+    $(k).checked=true;
+  });
+
+  $('duration').value=scenario.duration;
+
+  resetSimulation();
+});
+
+$('start').addEventListener('click',beginAssessment);
+$('step').addEventListener('click',nextStep);
+$('reset').addEventListener('click',resetSimulation);
+
+$('addRule').addEventListener('click',()=>{
+  const fact=$('newFact').value;
+  const outcome=$('newLevel').value;
+
+  const id='U'+(customRules.length+1);
+
+  customRules.push({
+    id,
+    name:'User-added rule: '+symptomLabels[fact],
+    outcome,
+    description:'A user-added educational rule links '+symptomLabels[fact]+' to '+outcome+'.',
+    test:f=>!!f[fact]
+  });
+
+  $('kbCount').textContent=
+    coreRules.length+' core rules + '+customRules.length+' user-added rule(s).';
+
+  renderRules();
+
+  log('activity',
+    '[KNOWLEDGE ACQUISITION] Added '+id+
+    ': IF '+symptomLabels[fact]+' THEN '+outcome+'.',
+    'ok'
+  );
+});
+
+renderRules();
+$('kbCount').textContent=coreRules.length+' core rules in the knowledge base.';
+</script>
+</body>
+</html>
