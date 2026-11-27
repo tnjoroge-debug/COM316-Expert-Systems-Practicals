@@ -1,0 +1,779 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D Medical Diagnosis Expert System</title>
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#071323;color:#edf5ff;font-family:Arial,sans-serif}
+header{
+ position:fixed;top:10px;left:15px;z-index:10;
+ padding:10px 14px;background:#071323eF;
+ border:1px solid #35516d;border-radius:9px;
+ pointer-events:none
+}
+header h2{font-size:18px;margin:0;color:#6bdcff}
+header p{font-size:11px;margin:5px 0 0;color:#b5c9dc}
+.panel{
+ position:fixed;z-index:8;background:#091b2ded;
+ border:1px solid #34536f;border-radius:10px;padding:12px;
+ box-shadow:0 5px 25px #0009;backdrop-filter:blur(8px);
+ overflow:auto
+}
+#patient{top:82px;left:10px;width:265px;max-height:calc(100vh - 95px)}
+#monitor{top:82px;right:10px;width:300px;max-height:calc(100vh - 95px)}
+#knowledge{bottom:48px;left:50%;transform:translateX(-50%);
+ width:min(530px,90vw);max-height:35vh}
+h3{font-size:14px;color:#70dcff;margin:0 0 8px}
+h4{font-size:11px;color:#9edcff;margin:12px 0 5px}
+p.help{font-size:11px;line-height:1.45;color:#b9cce0}
+label{display:block;font-size:11px;color:#c9d8e8;margin:7px 0 4px}
+input,select{
+ width:100%;padding:8px;border-radius:5px;
+ background:#102940;color:white;border:1px solid #3b607d
+}
+button{
+ width:100%;padding:9px;margin-top:8px;border:0;
+ border-radius:5px;background:#42c9f5;color:#061523;
+ font-weight:bold;cursor:pointer
+}
+button:hover{background:#8de5ff}
+button.secondary{background:#294761;color:white}
+button:disabled{opacity:.5}
+.status{
+ padding:8px;border-radius:5px;background:#102b43;
+ color:#8ee4ff;font-size:11px;line-height:1.5
+}
+.fact,.rule,.log{
+ padding:7px;margin:5px 0;background:#112a40;
+ border-left:3px solid #42cfff;border-radius:4px;
+ font-size:11px;line-height:1.45
+}
+.rule.pass{border-left-color:#40e6a0;background:#12382f}
+.rule.fail{border-left-color:#d69a59}
+.rule.custom{border-left-color:#d17aff}
+#result{
+ margin-top:10px;padding:12px;background:#18344a;
+ border-radius:7px;text-align:center;font-weight:bold;
+ font-size:14px
+}
+#result.urgent{background:#54232a;color:#ffb1b1}
+#result.pregnancy{color:#9de4ff}
+#result.digestive{color:#8df0bb}
+#result.review{color:#ffdb8b}
+#explanation{font-size:11px;line-height:1.5;color:#d1dfed;margin-top:9px}
+#activity{
+ position:fixed;bottom:10px;left:50%;transform:translateX(-50%);
+ z-index:10;background:#061323ed;border:1px solid #31506d;
+ border-radius:20px;padding:8px 14px;text-align:center;
+ font-size:11px;color:#9fe4ff;width:min(700px,94vw)
+}
+.legend{
+ position:fixed;top:62px;left:50%;transform:translateX(-50%);
+ z-index:7;display:flex;gap:8px;flex-wrap:wrap;
+ justify-content:center;font-size:10px;pointer-events:none
+}
+.legend span{background:#071323e8;padding:5px 8px;border-radius:12px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+@media(max-width:700px){
+ header h2{font-size:14px}header p{display:none}
+ #patient{top:65px;width:47%;max-height:48vh}
+ #monitor{top:auto;bottom:43vh;width:47%;max-height:27vh}
+ #knowledge{bottom:45px;max-height:38vh}
+ .legend{top:39px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+ <h2>MEDICAL DIAGNOSIS EXPERT SYSTEM</h2>
+ <p>Pregnancy possibility vs digestive fullness — 3D teaching simulation</p>
+</header>
+
+<div class="legend">
+ <span><i class="dot" style="background:#42cfff"></i>User interface</span>
+ <span><i class="dot" style="background:#dba64d"></i>Knowledge base</span>
+ <span><i class="dot" style="background:#39e69b"></i>Working memory</span>
+ <span><i class="dot" style="background:#b78aff"></i>Inference engine</span>
+ <span><i class="dot" style="background:#ffca62"></i>Explanation</span>
+ <span><i class="dot" style="background:#ff79a9"></i>Knowledge acquisition</span>
+</div>
+
+<!-- PATIENT CONSULTATION -->
+<div class="panel" id="patient">
+ <h3>1. PATIENT USER INTERFACE</h3>
+ <p class="help">Enter the patient's reported information. This is a teaching simulation, not a clinical diagnosis.</p>
+
+ <form id="patientForm">
+
+  <label>Has the patient missed her expected period?</label>
+  <select id="missed">
+   <option value="yes">Yes</option>
+   <option value="no">No</option>
+   <option value="unknown">Not sure</option>
+  </select>
+
+  <label>Could pregnancy have occurred through sex?</label>
+  <select id="exposure">
+   <option value="yes">Yes</option>
+   <option value="no">No</option>
+   <option value="unknown">Not sure / Prefer not to say</option>
+  </select>
+
+  <label>Days since last possible pregnancy exposure</label>
+  <input id="days" type="number" min="0" value="25">
+
+  <label>Home pregnancy test result</label>
+  <select id="test">
+   <option value="not">Not taken</option>
+   <option value="positive">Positive</option>
+   <option value="negative">Negative</option>
+   <option value="invalid">Invalid / Unclear</option>
+  </select>
+
+  <label>Feeling nauseated?</label>
+  <select id="nausea">
+   <option value="yes">Yes</option>
+   <option value="no">No</option>
+  </select>
+
+  <label>Breast tenderness?</label>
+  <select id="breast">
+   <option value="yes">Yes</option>
+   <option value="no">No</option>
+  </select>
+
+  <label>Unusual tiredness?</label>
+  <select id="tired">
+   <option value="yes">Yes</option>
+   <option value="no">No</option>
+  </select>
+
+  <label>Recent large meal?</label>
+  <select id="meal">
+   <option value="yes">Yes</option>
+   <option value="no">No</option>
+  </select>
+
+  <label>Feeling bloated or unusually full?</label>
+  <select id="bloating">
+   <option value="yes">Yes</option>
+   <option value="no">No</option>
+  </select>
+
+  <label>Frequent burping or passing gas?</label>
+  <select id="gas">
+   <option value="yes">Yes</option>
+   <option value="no">No</option>
+  </select>
+
+  <label>Heartburn or indigestion?</label>
+  <select id="heartburn">
+   <option value="yes">Yes</option>
+   <option value="no">No</option>
+  </select>
+
+  <h4 style="color:#ff9b9b">Safety screening</h4>
+
+  <label>Severe or one-sided lower abdominal pain?</label>
+  <select id="pain">
+   <option value="no">No</option>
+   <option value="yes">Yes</option>
+  </select>
+
+  <label>Vaginal bleeding or unusual spotting?</label>
+  <select id="bleeding">
+   <option value="no">No</option>
+   <option value="yes">Yes</option>
+  </select>
+
+  <label>Shoulder-tip pain?</label>
+  <select id="shoulder">
+   <option value="no">No</option>
+   <option value="yes">Yes</option>
+  </select>
+
+  <label>Severe dizziness or fainting?</label>
+  <select id="faint">
+   <option value="no">No</option>
+   <option value="yes">Yes</option>
+  </select>
+
+  <button type="submit" id="runBtn">RUN MEDICAL EXPERT SYSTEM</button>
+ </form>
+
+ <button class="secondary" onclick="loadExample()">LOAD NEXT CASE STUDY</button>
+ <button class="secondary" onclick="resetSystem()">RESET SIMULATION</button>
+</div>
+
+<!-- EXPERT SYSTEM MONITOR -->
+<div class="panel" id="monitor">
+ <h3>2. EXPERT SYSTEM MONITOR</h3>
+ <div class="status" id="status">Waiting for patient information.</div>
+
+ <h4>3. WORKING MEMORY — PATIENT FACTS</h4>
+ <div id="facts">No patient facts stored.</div>
+
+ <h4>4. KNOWLEDGE BASE — MEDICAL RULES</h4>
+ <div id="ruleList">Loading rules...</div>
+
+ <h4>5. INFERENCE ENGINE — RULE EXECUTION</h4>
+ <div id="trace">No rules evaluated.</div>
+
+ <h4>6. EXPLANATION FACILITY</h4>
+ <div id="explanation">
+  The system will explain its assessment after processing the facts.
+ </div>
+
+ <div id="result">ASSESSMENT: PENDING</div>
+</div>
+
+<!-- KNOWLEDGE ACQUISITION -->
+<div class="panel" id="knowledge">
+ <h3>7. KNOWLEDGE ACQUISITION FACILITY</h3>
+ <p class="help">
+  In this teaching example, a knowledge engineer can add a supplementary
+  educational rule to the knowledge base.
+ </p>
+
+ <label>New teaching rule</label>
+ <select id="newRule">
+  <option value="meal">IF recent large meal AND bloating, THEN digestive pattern is supported</option>
+  <option value="pregnancy">IF missed period AND possible pregnancy exposure, THEN pregnancy assessment is needed</option>
+ </select>
+
+ <button onclick="addKnowledge()">ADD RULE TO KNOWLEDGE BASE</button>
+ <div id="knowledgeMessage" class="help">No additional rules added.</div>
+</div>
+
+<div id="activity">SYSTEM READY — Begin a patient consultation.</div>
+
+<!-- THREE-DIMENSIONAL ENVIRONMENT -->
+<a-scene embedded
+ background="color:#071323"
+ renderer="antialias:true"
+ vr-mode-ui="enabled:false"
+ device-orientation-permission-ui="enabled:false">
+
+ <a-entity light="type:ambient;intensity:.85"></a-entity>
+ <a-entity light="type:directional;intensity:1.1" position="-3 6 5"></a-entity>
+ <a-entity light="type:point;intensity:1.3;color:#42cfff" position="0 5 0"></a-entity>
+
+ <a-plane rotation="-90 0 0" width="25" height="25" color="#0a1b2d"></a-plane>
+ <a-grid width="25" height="25" position="0 .02 0"
+  material="color:#28506d;opacity:.35"></a-grid>
+
+ <!-- INFERENCE ENGINE -->
+ <a-entity id="engine3d" position="0 2.4 0">
+  <a-sphere id="engineCore" radius=".65" color="#a77aff"
+   material="emissive:#6735b5;emissiveIntensity:.8"
+   animation="property:scale;to:1.15 1.15 1.15;dir:alternate;loop:true;dur:1100">
+  </a-sphere>
+  <a-torus radius=".95" radius-tubular=".025" color="#c3a3ff" rotation="45 0 0"></a-torus>
+  <a-torus radius="1.12" radius-tubular=".018" color="#55d8ff" rotation="0 45 0"></a-torus>
+  <a-text value="INFERENCE ENGINE" align="center" color="white" width="5" position="0 -1.2 0"></a-text>
+  <a-text value="MEDICAL RULE MATCHING" align="center" color="#d2baff" width="4" position="0 -1.5 0"></a-text>
+ </a-entity>
+
+ <!-- KNOWLEDGE BASE -->
+ <a-entity id="kb3d" position="-4 2.2 -1">
+  <a-box id="kbShape" width="1.45" height="1.45" depth="1.45"
+   color="#dba64d" material="emissive:#805018;emissiveIntensity:.55"
+   animation="property:rotation;to:0 360 0;loop:true;dur:14000"></a-box>
+  <a-text value="KNOWLEDGE BASE" align="center" color="#ffdc91" width="5" position="0 -1.35 0"></a-text>
+  <a-text value="MEDICAL RULES" align="center" color="white" width="3" position="0 -1.65 0"></a-text>
+ </a-entity>
+
+ <!-- WORKING MEMORY -->
+ <a-entity id="memory3d" position="4 2.2 -1">
+  <a-cylinder id="memoryShape" radius=".72" height="1.3" color="#36c9ed"
+   material="emissive:#075c82;emissiveIntensity:.5"></a-cylinder>
+  <a-sphere radius=".32" position="0 .75 0" color="#83eaff"></a-sphere>
+  <a-text value="WORKING MEMORY" align="center" color="#8deaff" width="5" position="0 -1.35 0"></a-text>
+  <a-text value="PATIENT FACTS" align="center" color="white" width="3" position="0 -1.65 0"></a-text>
+ </a-entity>
+
+ <!-- USER INTERFACE -->
+ <a-entity id="ui3d" position="0 1.6 4">
+  <a-box id="uiShape" width="1.8" height="1.1" depth=".18"
+   color="#279ed0" material="emissive:#07577c;emissiveIntensity:.5"></a-box>
+  <a-text value="USER INTERFACE" align="center" color="#8deaff" width="4" position="0 -.9 0"></a-text>
+  <a-text value="PATIENT INPUT" align="center" color="white" width="3" position="0 -1.15 0"></a-text>
+ </a-entity>
+
+ <!-- KNOWLEDGE ACQUISITION -->
+ <a-entity id="acq3d" position="-4 1.7 3">
+  <a-cone id="acqShape" radius-bottom=".75" radius-top=".25" height="1.1"
+   color="#f27ba9" material="emissive:#9e285b;emissiveIntensity:.5"></a-cone>
+  <a-text value="KNOWLEDGE ACQUISITION" align="center" color="#ffacd0" width="5" position="0 -1.15 0"></a-text>
+  <a-text value="EXPERT KNOWLEDGE" align="center" color="white" width="3" position="0 -1.45 0"></a-text>
+ </a-entity>
+
+ <!-- EXPLANATION FACILITY -->
+ <a-entity id="explain3d" position="4 1.7 3">
+  <a-octahedron id="explainShape" radius=".75" color="#ffc75e"
+   material="emissive:#9a6817;emissiveIntensity:.5"></a-octahedron>
+  <a-text value="EXPLANATION FACILITY" align="center" color="#ffdb8c" width="5" position="0 -1.15 0"></a-text>
+  <a-text value="WHY THIS ASSESSMENT?" align="center" color="white" width="3" position="0 -1.45 0"></a-text>
+ </a-entity>
+
+ <!-- OUTPUT -->
+ <a-entity id="output3d" position="0 1.5 -4">
+  <a-octahedron id="outputShape" radius=".8" color="#3bdc9b"
+   material="emissive:#08764b;emissiveIntensity:.6"></a-octahedron>
+  <a-text value="ASSESSMENT OUTPUT" align="center" color="#8bffca" width="5" position="0 -1.2 0"></a-text>
+ </a-entity>
+
+ <!-- CONNECTIONS -->
+ <a-entity>
+  <a-cylinder position="-2 2.3 -.5" rotation="0 0 90" radius=".025" height="2.5" color="#dba64d"></a-cylinder>
+  <a-cylinder position="2 2.3 -.5" rotation="0 0 90" radius=".025" height="2.5" color="#36c9ed"></a-cylinder>
+  <a-cylinder position="0 1.9 -2" rotation="90 0 0" radius=".025" height="3.2" color="#b78aff"></a-cylinder>
+  <a-cylinder position="-2 2 2.5" radius=".02" height="3.2" color="#f27ba9"></a-cylinder>
+  <a-cylinder position="2 1.8 2.5" radius=".02" height="3.2" color="#ffc75e"></a-cylinder>
+ </a-entity>
+
+ <a-entity id="particles"></a-entity>
+
+ <a-entity position="0 7 14">
+  <a-camera wasd-controls="enabled:true" look-controls="enabled:true"></a-camera>
+ </a-entity>
+</a-scene>
+
+<script>
+/* ======================================================
+   MEDICAL EXPERT SYSTEM — EDUCATIONAL RULE ENGINE
+====================================================== */
+
+const $ = id => document.getElementById(id);
+const pause = ms => new Promise(resolve => setTimeout(resolve,ms));
+
+let processing=false;
+let extraRules=[];
+let caseIndex=0;
+
+/* Base medical knowledge.
+   Rules are for teaching logic, not clinical diagnosis. */
+
+const baseRules=[
+ {
+  id:"M1",
+  name:"Possible urgent complication",
+  description:"Possible pregnancy with severe warning symptoms",
+  test:f=>f.pain==="yes" || f.shoulder==="yes" || f.faint==="yes",
+  result:"URGENT",
+  reason:"Severe or one-sided abdominal pain, shoulder-tip pain or fainting can be warning signs of a serious condition, including ectopic pregnancy. Urgent medical assessment is needed."
+ },
+ {
+  id:"M2",
+  name:"Positive pregnancy test",
+  description:"Home pregnancy test reports positive",
+  test:f=>f.test==="positive",
+  result:"PREGNANCY",
+  reason:"A positive home pregnancy test is strong evidence of pregnancy. Arrange confirmation and appropriate care with a healthcare professional."
+ },
+ {
+  id:"M3",
+  name:"Possible pregnancy — missed period",
+  description:"Missed period and possible pregnancy exposure",
+  test:f=>f.missed==="yes" && f.exposure==="yes" &&
+           f.test!=="negative",
+  result:"PREGNANCY",
+  reason:"A missed period following possible pregnancy exposure makes pregnancy possible. Symptoms alone cannot confirm it; take a home pregnancy test."
+ },
+ {
+  id:"M4",
+  name:"Early negative test",
+  description:"Negative test taken fewer than 21 days after possible exposure",
+  test:f=>f.test==="negative" && f.exposure==="yes" &&
+           f.days<21,
+  result:"RETEST",
+  reason:"A negative test may be too early. Repeat testing at least 21 days after the last unprotected sex if the expected period date is unknown, or from the first day of a missed period."
+ },
+ {
+  id:"M5",
+  name:"Negative test but period remains late",
+  description:"Negative test with a missed period",
+  test:f=>f.test==="negative" && f.missed==="yes",
+  result:"RETEST",
+  reason:"A negative result does not always exclude pregnancy. Repeat the test after a few days; seek medical advice if the period still does not arrive."
+ },
+ {
+  id:"M6",
+  name:"Digestive fullness pattern",
+  description:"Recent large meal with bloating, gas or heartburn",
+  test:f=>f.meal==="yes" &&
+          (f.bloating==="yes" || f.gas==="yes" || f.heartburn==="yes") &&
+          f.test!=="positive" &&
+          f.missed!=="yes" &&
+          f.exposure!=="yes",
+  result:"DIGESTIVE",
+  reason:"The recent large meal and digestive symptoms are more consistent with temporary fullness, bloating or indigestion. This does not rule out pregnancy if exposure is possible."
+ },
+ {
+  id:"M7",
+  name:"Possible pregnancy — symptoms and exposure",
+  description:"Possible pregnancy exposure with pregnancy-associated symptoms",
+  test:f=>f.exposure==="yes" &&
+          (f.nausea==="yes" || f.breast==="yes" || f.tired==="yes"),
+  result:"PREGNANCY",
+  reason:"These symptoms can occur in pregnancy but are not specific to it. A pregnancy test is needed."
+ },
+ {
+  id:"M8",
+  name:"Uncertain presentation",
+  description:"Available information does not distinguish the possibilities",
+  test:f=>true,
+  result:"REVIEW",
+  reason:"The available facts are insufficient to distinguish pregnancy from digestive or other causes. A pregnancy test and/or clinical assessment may be appropriate."
+ }
+];
+
+function allRules(){
+ return [...baseRules,...extraRules];
+}
+
+function renderRules(){
+ $("ruleList").innerHTML=allRules().map(r=>`
+  <div class="rule ${r.custom?"custom":""}">
+   <strong>${r.id}: ${r.name}</strong><br>
+   ${r.description}<br>
+   THEN <strong>${r.result}</strong>
+  </div>
+ `).join("");
+}
+
+/* Knowledge acquisition facility */
+function addKnowledge(){
+ const choice=$("newRule").value;
+ let r;
+
+ if(choice==="meal"){
+  r={
+   id:"K"+(extraRules.length+1),
+   name:"Expert-added digestive rule",
+   description:"Recent large meal AND bloating",
+   test:f=>f.meal==="yes" && f.bloating==="yes",
+   result:"DIGESTIVE",
+   reason:"An additional teaching rule was supplied through the knowledge acquisition facility. A recent large meal with bloating supports a digestive explanation, but cannot exclude pregnancy.",
+   custom:true
+  };
+ }else{
+  r={
+   id:"K"+(extraRules.length+1),
+   name:"Expert-added pregnancy assessment rule",
+   description:"Missed period AND possible pregnancy exposure",
+   test:f=>f.missed==="yes" && f.exposure==="yes",
+   result:"PREGNANCY",
+   reason:"An additional teaching rule was supplied through the knowledge acquisition facility. Pregnancy testing is appropriate.",
+   custom:true
+  };
+ }
+
+ extraRules.push(r);
+ renderRules();
+
+ $("knowledgeMessage").innerHTML=
+  `<strong>Knowledge acquired.</strong><br>
+   ${r.id}: ${r.description}. The rule is now in the knowledge base.`;
+
+ $("activity").textContent=
+  "KNOWLEDGE ACQUISITION — New expert knowledge has been added to the knowledge base.";
+
+ pulse("acq3d","#ff79a9");
+ particle("-4 1.7 3","-4 2.2 -1","#ff79a9");
+}
+
+/* Patient information becomes working memory */
+function readPatient(){
+ const ids=[
+  "missed","exposure","test","nausea","breast","tired",
+  "meal","bloating","gas","heartburn","pain","bleeding",
+  "shoulder","faint"
+ ];
+ const f={};
+
+ ids.forEach(id=>f[id]=$(id).value);
+ f.days=Number($("days").value);
+
+ if(!Number.isFinite(f.days)||f.days<0){
+  throw new Error("Enter a valid number of days.");
+ }
+ return f;
+}
+
+function renderFacts(f){
+ const labels={
+  missed:"Missed period",
+  exposure:"Possible pregnancy exposure",
+  test:"Pregnancy test",
+  nausea:"Nausea",
+  breast:"Breast tenderness",
+  tired:"Unusual tiredness",
+  meal:"Recent large meal",
+  bloating:"Bloating/fullness",
+  gas:"Gas/burping",
+  heartburn:"Heartburn",
+  pain:"Severe or one-sided pain",
+  bleeding:"Vaginal bleeding",
+  shoulder:"Shoulder-tip pain",
+  faint:"Dizziness/fainting"
+ };
+
+ $("facts").innerHTML=Object.keys(labels).map(key=>`
+  <div class="fact">${labels[key]}: <strong>${f[key].toUpperCase()}</strong></div>
+ `).join("")+
+ `<div class="fact">Days since possible exposure: ${f.days}</div>`;
+}
+
+/* Animated information particles */
+function particle(from,to,color){
+ const p=document.createElement("a-sphere");
+ p.setAttribute("radius",".12");
+ p.setAttribute("color",color);
+ p.setAttribute("material",`emissive:${color};emissiveIntensity:1`);
+ p.setAttribute("position",from);
+ $("particles").appendChild(p);
+ p.setAttribute("animation__move",{
+  property:"position",to:to,dur:1300,easing:"easeInOutSine"
+ });
+ setTimeout(()=>p.remove(),1450);
+}
+
+function pulse(id,color){
+ const node=$(id);
+ if(!node)return;
+ const shape=node.querySelector("a-box,a-cylinder,a-sphere,a-cone,a-octahedron");
+ if(!shape)return;
+ shape.setAttribute("material",
+  `color:${color};emissive:${color};emissiveIntensity:.9`);
+ shape.setAttribute("animation__pulse",{
+  property:"scale",from:"1 1 1",to:"1.3 1.3 1.3",
+  dur:400,dir:"alternate",loop:2
+ });
+}
+
+function say(message){
+ $("activity").textContent=message;
+ $("status").textContent=message;
+}
+
+/* Inference engine */
+async function runInference(f){
+ const trace=$("trace");
+ trace.innerHTML="";
+ const evaluated=[];
+
+ say("INFERENCE ENGINE — Retrieving medical rules from the knowledge base.");
+ pulse("kb3d","#dba64d");
+ particle("-4 2.2 -1","0 2.4 0","#dba64d");
+ await pause(1000);
+
+ say("INFERENCE ENGINE — Retrieving patient facts from working memory.");
+ pulse("memory3d","#39e69b");
+ particle("4 2.2 -1","0 2.4 0","#39e69b");
+ await pause(1000);
+
+ for(const rule of allRules()){
+  say(`INFERENCE ENGINE — Evaluating ${rule.id}: ${rule.name}`);
+  pulse("engine3d","#b78aff");
+  particle("0 2.4 0","-4 2.2 -1","#b78aff");
+  await pause(650);
+
+  const matched=rule.test(f);
+  evaluated.push({rule,matched});
+
+  const div=document.createElement("div");
+  div.className="rule "+(matched?"pass":"fail")+
+                (rule.custom?" custom":"");
+  div.innerHTML=`
+   <strong>${rule.id}: ${rule.name}</strong><br>
+   Condition: <strong>${matched?"TRUE":"FALSE"}</strong><br>
+   Conclusion: ${rule.result}
+  `;
+  trace.appendChild(div);
+
+  particle("0 2.4 0","4 2.2 -1",
+           matched?"#39e69b":"#d69a59");
+
+  await pause(450);
+
+  /* Safety rule has highest priority.
+     First matched non-default rule determines the outcome. */
+  if(matched && rule.result!=="REVIEW"){
+   break;
+  }
+ }
+ return evaluated;
+}
+
+/* Explanation facility */
+function explain(evaluated,f,outcome){
+ const selected=evaluated.find(x=>
+  x.matched && x.rule.result!=="REVIEW");
+
+ const rule=selected?selected.rule:
+  evaluated.find(x=>x.matched)?.rule;
+
+ let message=rule?`
+  <strong>Rule applied:</strong> ${rule.id} — ${rule.name}<br>
+  <strong>Reason:</strong> ${rule.reason}
+ `:"No rule matched.";
+
+ message+=`
+  <br><br><strong>Important:</strong> This is an educational rule-based assessment.
+  It does not establish pregnancy or diagnose a digestive condition.
+ `;
+
+ if(outcome==="RETEST"){
+  message+=`<br><br>Most pregnancy tests can be used from the first day of a missed period.
+  If the expected period date is unknown, testing at least 21 days after possible exposure is recommended.`;
+ }
+
+ if(outcome==="URGENT"){
+  message+=`<br><br><strong>Action:</strong> Seek emergency medical assessment now.
+  Do not wait for a home pregnancy test.`;
+ }
+
+ $("explanation").innerHTML=message;
+ pulse("explain3d","#ffc75e");
+ particle("4 1.7 3","0 1.5 -4","#ffc75e");
+}
+
+/* Full expert-system consultation */
+async function processPatient(f){
+ processing=true;
+ $("runBtn").disabled=true;
+ $("trace").innerHTML="";
+ $("explanation").innerHTML="Waiting for inference results...";
+ $("result").className="";
+ $("result").textContent="ASSESSMENT: PROCESSING";
+
+ /* 1. User interface */
+ say("USER INTERFACE — Receiving patient information.");
+ pulse("ui3d","#42cfff");
+ particle("0 1.6 4","4 2.2 -1","#42cfff");
+ await pause(700);
+
+ /* 2. Working memory */
+ say("WORKING MEMORY — Storing patient facts.");
+ renderFacts(f);
+ pulse("memory3d","#39e69b");
+ await pause(900);
+
+ /* 3. Knowledge base and inference engine */
+ const evaluated=await runInference(f);
+
+ /* 4. Select conclusion */
+ const selected=evaluated.find(x=>
+  x.matched && x.rule.result!=="REVIEW");
+
+ const outcome=selected?selected.rule.result:"REVIEW";
+
+ /* 5. Explanation */
+ say("EXPLANATION FACILITY — Preparing reasoning report.");
+ explain(evaluated,f,outcome);
+ await pause(900);
+
+ /* 6. Output */
+ const labels={
+  URGENT:"URGENT MEDICAL ASSESSMENT",
+  PREGNANCY:"PREGNANCY POSSIBLE — TEST / CONFIRM",
+  RETEST:"TEST TIMING / RESULT NEEDS REVIEW",
+  DIGESTIVE:"DIGESTIVE FULLNESS PATTERN MORE LIKELY",
+  REVIEW:"UNCERTAIN — FURTHER ASSESSMENT"
+ };
+
+ $("result").textContent=labels[outcome];
+ $("result").className=
+  outcome==="URGENT"?"urgent":
+  outcome==="PREGNANCY"||outcome==="RETEST"?"pregnancy":
+  outcome==="DIGESTIVE"?"digestive":"review";
+
+ const color=outcome==="URGENT"?"#ff6565":
+  outcome==="PREGNANCY"||outcome==="RETEST"?"#42cfff":
+  outcome==="DIGESTIVE"?"#39e69b":"#ffd36a";
+
+ pulse("output3d",color);
+ particle("0 2.4 0","0 1.5 -4",color);
+
+ say("CONSULTATION COMPLETE — Review the rules and explanation.");
+
+ processing=false;
+ $("runBtn").disabled=false;
+}
+
+/* Submit patient consultation */
+$("patientForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ if(processing)return;
+ try{
+  const facts=readPatient();
+  await processPatient(facts);
+ }catch(err){
+  say("INPUT ERROR — "+err.message);
+ }
+});
+
+/* Case studies for the classroom */
+const cases=[
+ {
+  missed:"yes",exposure:"yes",days:28,test:"not",
+  nausea:"yes",breast:"yes",tired:"yes",
+  meal:"no",bloating:"no",gas:"no",heartburn:"no",
+  pain:"no",bleeding:"no",shoulder:"no",faint:"no"
+ },
+ {
+  missed:"no",exposure:"no",days:0,test:"not",
+  nausea:"no",breast:"no",tired:"no",
+  meal:"yes",bloating:"yes",gas:"yes",heartburn:"yes",
+  pain:"no",bleeding:"no",shoulder:"no",faint:"no"
+ },
+ {
+  missed:"yes",exposure:"yes",days:8,test:"negative",
+  nausea:"yes",breast:"no",tired:"yes",
+  meal:"no",bloating:"no",gas:"no",heartburn:"no",
+  pain:"no",bleeding:"no",shoulder:"no",faint:"no"
+ },
+ {
+  missed:"yes",exposure:"yes",days:35,test:"not",
+  nausea:"yes",breast:"no",tired:"yes",
+  meal:"no",bloating:"no",gas:"no",heartburn:"no",
+  pain:"yes",bleeding:"yes",shoulder:"yes",faint:"yes"
+ },
+ {
+  missed:"no",exposure:"unknown",days:0,test:"not",
+  nausea:"no",breast:"no",tired:"no",
+  meal:"no",bloating:"yes",gas:"no",heartburn:"no",
+  pain:"no",bleeding:"no",shoulder:"no",faint:"no"
+ }
+];
+
+function loadExample(){
+ const c=cases[caseIndex%cases.length];
+ caseIndex++;
+ Object.keys(c).forEach(key=>$(key).value=c[key]);
+ say("CASE STUDY LOADED — Submit the consultation to run the expert system.");
+}
+
+function resetSystem(){
+ if(processing)return;
+ $("patientForm").reset();
+ $("facts").textContent="No patient facts stored.";
+ $("trace").textContent="No rules evaluated.";
+ $("explanation").textContent="The system will explain its assessment after processing the facts.";
+ $("result").className="";
+ $("result").textContent="ASSESSMENT: PENDING";
+ $("particles").innerHTML="";
+ say("SYSTEM RESET — Ready for a new patient consultation.");
+}
+
+renderRules();
+</script>
+</body>
+</html>
