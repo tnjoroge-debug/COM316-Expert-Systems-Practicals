@@ -1,0 +1,890 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Loan Approval Expert System</title>
+
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #07111f;
+    color: #eaf2ff;
+}
+
+#app {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+}
+
+a-scene {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.header {
+    position: absolute;
+    top: 12px;
+    left: 20px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.header h2 {
+    margin: 0;
+    font-size: 21px;
+}
+
+.header p {
+    color: #a9bdd5;
+    margin-top: 5px;
+    font-size: 12px;
+}
+
+.panel {
+    position: absolute;
+    z-index: 5;
+    background: rgba(8, 20, 37, .94);
+    border: 1px solid #294766;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 8px 30px #0008;
+    backdrop-filter: blur(8px);
+}
+
+#application {
+    top: 85px;
+    left: 18px;
+    width: 285px;
+    max-height: calc(100vh - 105px);
+    overflow-y: auto;
+}
+
+#application h3, #reasoning h3 {
+    margin: 0 0 12px;
+    color: #69d7ff;
+    font-size: 16px;
+}
+
+label {
+    display: block;
+    color: #c7d8eb;
+    font-size: 12px;
+    margin: 10px 0 5px;
+}
+
+input, select {
+    width: 100%;
+    padding: 9px;
+    background: #10243b;
+    color: white;
+    border: 1px solid #385b7b;
+    border-radius: 6px;
+    outline: none;
+}
+
+input:focus, select:focus {
+    border-color: #42c8ff;
+}
+
+button {
+    width: 100%;
+    padding: 11px;
+    margin-top: 12px;
+    border: 0;
+    border-radius: 7px;
+    color: #061321;
+    font-weight: bold;
+    cursor: pointer;
+    background: #49d3ff;
+}
+
+button:hover { background: #8ce5ff; }
+
+button.secondary {
+    background: #29445f;
+    color: white;
+}
+
+#reasoning {
+    top: 85px;
+    right: 18px;
+    width: 310px;
+    max-height: calc(100vh - 105px);
+    overflow-y: auto;
+}
+
+.status {
+    padding: 9px;
+    border-radius: 6px;
+    background: #10243b;
+    color: #b8cbe0;
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+#facts, #trace {
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.fact {
+    padding: 7px;
+    margin: 5px 0;
+    background: #122b42;
+    border-left: 3px solid #43cfff;
+    border-radius: 4px;
+}
+
+.rule {
+    padding: 8px;
+    margin: 7px 0;
+    background: #14283e;
+    border-left: 3px solid #7d9bb8;
+    border-radius: 4px;
+}
+
+.rule.fired {
+    border-left-color: #39e69b;
+    background: #12352f;
+}
+
+.rule.failed {
+    border-left-color: #f5a14c;
+}
+
+#decision {
+    margin-top: 12px;
+    padding: 13px;
+    border-radius: 8px;
+    background: #152c43;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#decision.approved { color: #42efa5; }
+#decision.rejected { color: #ff7777; }
+#decision.review { color: #ffd36a; }
+
+#explanation {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #c5d5e7;
+    margin-top: 10px;
+}
+
+#activity {
+    position: absolute;
+    z-index: 5;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(5, 17, 31, .92);
+    border: 1px solid #294766;
+    border-radius: 30px;
+    padding: 10px 18px;
+    color: #9edfff;
+    font-size: 12px;
+    text-align: center;
+    width: min(600px, 90%);
+}
+
+.legend {
+    position: absolute;
+    z-index: 5;
+    bottom: 65px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    font-size: 11px;
+    color: #c5d5e7;
+    pointer-events: none;
+}
+
+.legend span::before {
+    content: "";
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 5px;
+    background: var(--c);
+}
+
+@media(max-width: 900px) {
+    #application {
+        width: 245px;
+        left: 8px;
+    }
+    #reasoning {
+        width: 260px;
+        right: 8px;
+    }
+}
+
+@media(max-width: 650px) {
+    #application {
+        top: 75px;
+        width: 45%;
+        max-height: 65vh;
+    }
+    #reasoning {
+        top: auto;
+        bottom: 85px;
+        width: 45%;
+        max-height: 35vh;
+    }
+    .header h2 { font-size: 16px; }
+    .header p { display: none; }
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+
+<div class="header">
+    <h2>LOAN APPROVAL EXPERT SYSTEM</h2>
+    <p>3D Knowledge-Based Decision Support Simulation</p>
+</div>
+
+<!-- APPLICANT INPUT -->
+<div class="panel" id="application">
+    <h3>Loan Application</h3>
+
+    <form id="loanForm">
+
+        <label>Applicant's monthly income (KES)</label>
+        <input id="income" type="number" min="1" value="80000" required>
+
+        <label>Existing monthly debt payments (KES)</label>
+        <input id="debt" type="number" min="0" value="15000" required>
+
+        <label>Monthly living expenses (KES)</label>
+        <input id="expenses" type="number" min="0" value="20000" required>
+
+        <label>Loan amount requested (KES)</label>
+        <input id="loan" type="number" min="1" value="200000" required>
+
+        <label>Credit score (300–850)</label>
+        <input id="credit" type="number" min="300" max="850" value="720" required>
+
+        <label>Employment duration (months)</label>
+        <input id="employment" type="number" min="0" value="36" required>
+
+        <label>Collateral available?</label>
+        <select id="collateral">
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+        </select>
+
+        <button type="submit" id="submitBtn">RUN EXPERT SYSTEM</button>
+        <button type="button" class="secondary" onclick="loadExample()">
+            LOAD ANOTHER EXAMPLE
+        </button>
+        <button type="button" class="secondary" onclick="resetSystem()">
+            RESET SIMULATION
+        </button>
+    </form>
+</div>
+
+<!-- REASONING AND EXPLANATION -->
+<div class="panel" id="reasoning">
+    <h3>Expert System Monitor</h3>
+
+    <div class="status" id="status">
+        Waiting for a loan application...
+    </div>
+
+    <strong style="font-size:12px;color:#69d7ff">
+        WORKING MEMORY — Applicant Facts
+    </strong>
+    <div id="facts">
+        No facts have been entered.
+    </div>
+
+    <hr style="border-color:#294766;margin:13px 0">
+
+    <strong style="font-size:12px;color:#69d7ff">
+        INFERENCE ENGINE — Rule Execution
+    </strong>
+    <div id="trace">
+        Rules have not been evaluated.
+    </div>
+
+    <div id="decision">DECISION: PENDING</div>
+
+    <div id="explanation">
+        Submit an application to see how the expert system reaches its decision.
+    </div>
+</div>
+
+<div class="legend">
+    <span style="--c:#42cfff">Facts</span>
+    <span style="--c:#f5bd50">Knowledge base</span>
+    <span style="--c:#b78aff">Inference engine</span>
+    <span style="--c:#42efa5">Decision</span>
+</div>
+
+<div id="activity">
+    SYSTEM READY — Enter applicant details to begin consultation.
+</div>
+
+<!-- THREE-DIMENSIONAL ENVIRONMENT -->
+<a-scene
+    embedded
+    background="color: #07111f"
+    renderer="antialias: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
+    <a-assets>
+        <a-mixin id="node"
+            geometry="primitive: sphere; radius: 0.42"
+            material="metalness: 0.25; roughness: 0.3">
+        </a-mixin>
+    </a-assets>
+
+    <a-entity light="type: ambient; intensity: 0.8"></a-entity>
+    <a-entity light="type: point; intensity: 1.4; color: #4bcfff"
+              position="0 5 4"></a-entity>
+
+    <!-- FLOOR -->
+    <a-plane rotation="-90 0 0"
+             width="30" height="30"
+             material="color: #0b1c2e; roughness: 0.9">
+    </a-plane>
+
+    <a-grid position="0 0.01 0"
+            width="30" height="30"
+            material="color: #1b4562; opacity: 0.4">
+    </a-grid>
+
+    <!-- CENTRAL EXPERT SYSTEM -->
+    <a-entity id="centralSystem" position="0 2.3 0">
+        <a-sphere radius="0.65"
+                  color="#8d68d8"
+                  material="emissive: #542a91; emissiveIntensity: 0.6"
+                  animation="property: scale; to: 1.12 1.12 1.12; dir: alternate; loop: true; dur: 1300">
+        </a-sphere>
+
+        <a-torus radius="0.9" radius-tubular="0.025"
+                 color="#b78aff" rotation="45 0 0">
+        </a-torus>
+
+        <a-torus radius="1.05" radius-tubular="0.018"
+                 color="#4bcfff" rotation="0 45 0">
+        </a-torus>
+
+        <a-text value="INFERENCE ENGINE"
+                align="center" color="#ffffff"
+                width="5" position="0 -1.15 0">
+        </a-text>
+    </a-entity>
+
+    <!-- KNOWLEDGE BASE -->
+    <a-entity id="knowledgeNode" position="-3.8 2.2 -1">
+        <a-box width="1.5" height="1.5" depth="1.5"
+               color="#c28c35"
+               material="emissive: #754b0c; emissiveIntensity: 0.4"
+               animation="property: rotation; to: 0 360 0; loop: true; dur: 12000">
+        </a-box>
+        <a-text value="KNOWLEDGE BASE"
+                align="center" color="#ffda87"
+                width="5" position="0 -1.3 0">
+        </a-text>
+        <a-text value="IF-THEN RULES"
+                align="center" color="#ffffff"
+                width="3" position="0 -1.65 0">
+        </a-text>
+    </a-entity>
+
+    <!-- WORKING MEMORY -->
+    <a-entity id="memoryNode" position="3.8 2.2 -1">
+        <a-cylinder radius="0.7" height="1.3"
+                    color="#2399c9"
+                    material="emissive: #07547a; emissiveIntensity: 0.5">
+        </a-cylinder>
+        <a-sphere position="0 0.75 0" radius="0.35"
+                  color="#42cfff"></a-sphere>
+        <a-text value="WORKING MEMORY"
+                align="center" color="#8ee5ff"
+                width="5" position="0 -1.3 0">
+        </a-text>
+        <a-text value="APPLICANT FACTS"
+                align="center" color="#ffffff"
+                width="3" position="0 -1.65 0">
+        </a-text>
+    </a-entity>
+
+    <!-- DECISION NODE -->
+    <a-entity id="decisionNode" position="0 1.6 -4">
+        <a-octahedron radius="0.85"
+                      color="#38b982"
+                      material="emissive: #075c39; emissiveIntensity: 0.5">
+        </a-octahedron>
+        <a-text value="FINAL DECISION"
+                align="center" color="#8bffc9"
+                width="5" position="0 -1.25 0">
+        </a-text>
+    </a-entity>
+
+    <!-- USER INTERFACE NODE -->
+    <a-entity position="0 1.5 4">
+        <a-box width="2" height="1.1" depth="0.15"
+               color="#23658a"></a-box>
+        <a-text value="USER INTERFACE"
+                align="center" color="#8ee5ff"
+                width="4" position="0 -0.9 0">
+        </a-text>
+    </a-entity>
+
+    <!-- CONNECTING PATHWAYS -->
+    <a-entity id="connections">
+        <a-cylinder position="-1.9 2.2 -0.5"
+                    rotation="0 0 90"
+                    radius="0.025" height="2.5"
+                    color="#c28c35"></a-cylinder>
+
+        <a-cylinder position="1.9 2.2 -0.5"
+                    rotation="0 0 90"
+                    radius="0.025" height="2.5"
+                    color="#42cfff"></a-cylinder>
+
+        <a-cylinder position="0 1.9 -2.1"
+                    rotation="90 0 0"
+                    radius="0.025" height="3"
+                    color="#b78aff"></a-cylinder>
+    </a-entity>
+
+    <!-- PARTICLES THAT REPRESENT INFORMATION FLOW -->
+    <a-entity id="particles"></a-entity>
+
+    <!-- CAMERA -->
+    <a-entity position="0 7 13">
+        <a-camera look-controls wasd-controls="enabled: true"
+                  position="0 0 0">
+        </a-camera>
+    </a-entity>
+
+</a-scene>
+</div>
+
+<script>
+/* =========================================================
+   LOAN APPROVAL EXPERT SYSTEM
+   A simple forward-chaining, rule-based expert system
+========================================================= */
+
+const $ = id => document.getElementById(id);
+
+let running = false;
+
+/* Knowledge base: IF-THEN production rules */
+const rules = [
+    {
+        id: "R1",
+        name: "Credit Risk Rule",
+        condition: f => f.credit < 500,
+        conclusion: "REJECT",
+        explanation: "Credit score is below 500, indicating high credit risk."
+    },
+    {
+        id: "R2",
+        name: "Debt Burden Rule",
+        condition: f => f.dti > 0.60,
+        conclusion: "REJECT",
+        explanation: "Existing debt payments exceed 60% of monthly income."
+    },
+    {
+        id: "R3",
+        name: "Insufficient Income Rule",
+        condition: f => f.disposable <= 0,
+        conclusion: "REJECT",
+        explanation: "The applicant has no positive disposable income after existing debt and living expenses."
+    },
+    {
+        id: "R4",
+        name: "Strong Applicant Rule",
+        condition: f =>
+            f.credit >= 650 &&
+            f.dti <= 0.40 &&
+            f.employment >= 12 &&
+            f.disposable >= f.loan * 0.05,
+        conclusion: "APPROVE",
+        explanation: "The applicant has a good credit score, manageable debt, stable employment and sufficient disposable income."
+    },
+    {
+        id: "R5",
+        name: "Collateral Support Rule",
+        condition: f =>
+            f.collateral === "yes" &&
+            f.credit >= 550 &&
+            f.dti <= 0.50 &&
+            f.employment >= 6 &&
+            f.disposable > 0,
+        conclusion: "REVIEW",
+        explanation: "Collateral and acceptable supporting indicators justify further assessment by a loan officer."
+    },
+    {
+        id: "R6",
+        name: "Manual Assessment Rule",
+        condition: f =>
+            f.credit >= 500 &&
+            f.dti <= 0.60 &&
+            f.disposable > 0,
+        conclusion: "REVIEW",
+        explanation: "The applicant does not satisfy all automatic approval conditions. Manual assessment is required."
+    }
+];
+
+/* Capture applicant facts and put them into working memory */
+function collectFacts() {
+    const income = Number($("income").value);
+    const debt = Number($("debt").value);
+    const expenses = Number($("expenses").value);
+    const loan = Number($("loan").value);
+    const credit = Number($("credit").value);
+    const employment = Number($("employment").value);
+    const collateral = $("collateral").value;
+
+    if (
+        income <= 0 || loan <= 0 || debt < 0 || expenses < 0 ||
+        credit < 300 || credit > 850 || employment < 0 ||
+        ![income, debt, expenses, loan, credit, employment].every(Number.isFinite)
+    ) {
+        throw new Error("Please enter valid values for all application fields.");
+    }
+
+    const disposable = income - debt - expenses;
+    const dti = debt / income;
+
+    return {
+        income,
+        debt,
+        expenses,
+        loan,
+        credit,
+        employment,
+        collateral,
+        disposable,
+        dti
+    };
+}
+
+/* Display facts stored in working memory */
+function displayFacts(f) {
+    $("facts").innerHTML = `
+        <div class="fact">Monthly income: KES ${f.income.toLocaleString()}</div>
+        <div class="fact">Existing debt: KES ${f.debt.toLocaleString()}</div>
+        <div class="fact">Living expenses: KES ${f.expenses.toLocaleString()}</div>
+        <div class="fact">Loan requested: KES ${f.loan.toLocaleString()}</div>
+        <div class="fact">Credit score: ${f.credit}</div>
+        <div class="fact">Employment: ${f.employment} months</div>
+        <div class="fact">Collateral: ${f.collateral.toUpperCase()}</div>
+        <div class="fact">Debt-to-income ratio: ${(f.dti * 100).toFixed(1)}%</div>
+        <div class="fact">Disposable income: KES ${f.disposable.toLocaleString()}</div>
+    `;
+}
+
+/* Animate a particle moving between 3D components */
+function sendParticle(from, to, color = "#42cfff") {
+    const scene = document.querySelector("a-scene");
+    const particle = document.createElement("a-sphere");
+
+    particle.setAttribute("radius", "0.11");
+    particle.setAttribute("color", color);
+    particle.setAttribute("material",
+        `emissive: ${color}; emissiveIntensity: 1`);
+
+    particle.setAttribute("position", from);
+
+    $("particles").appendChild(particle);
+
+    const animation = document.createElement("a-animation");
+    particle.setAttribute("animation__move", {
+        property: "position",
+        to: to,
+        dur: 1300,
+        easing: "easeInOutSine"
+    });
+
+    setTimeout(() => particle.remove(), 1500);
+}
+
+/* Visually highlight the component currently working */
+function highlight(id, color) {
+    const node = $(id);
+    if (!node) return;
+
+    const shape = node.querySelector("a-box, a-cylinder, a-sphere, a-octahedron");
+    if (shape) {
+        shape.setAttribute("material",
+            `color: ${color}; emissive: ${color}; emissiveIntensity: 0.9`);
+    }
+}
+
+/* Run the inference engine */
+async function runInference(f) {
+    const trace = $("trace");
+    const status = $("status");
+
+    trace.innerHTML = "";
+    $("decision").className = "";
+    $("decision").textContent = "DECISION: PROCESSING...";
+    $("explanation").textContent = "";
+
+    highlight("memoryNode", "#42cfff");
+    highlight("knowledgeNode", "#c28c35");
+
+    status.textContent = "Stage 1: Applicant facts loaded into working memory.";
+    $("activity").textContent =
+        "WORKING MEMORY — Applicant information has been collected.";
+
+    sendParticle("0 1.5 4", "3.8 2.2 -1", "#42cfff");
+
+    await pause(1100);
+
+    status.textContent = "Stage 2: Inference engine is retrieving rules.";
+    $("activity").textContent =
+        "KNOWLEDGE BASE — Retrieving IF-THEN rules for loan assessment.";
+
+    sendParticle("-3.8 2.2 -1", "0 2.3 0", "#f5bd50");
+    highlight("knowledgeNode", "#ffd36a");
+
+    await pause(1400);
+
+    const fired = [];
+
+    for (const rule of rules) {
+        status.textContent =
+            `Evaluating ${rule.id}: ${rule.name}`;
+
+        $("activity").textContent =
+            `INFERENCE ENGINE — Testing ${rule.id}: ${rule.name}`;
+
+        sendParticle("0 2.3 0", "-3.8 2.2 -1", "#b78aff");
+
+        await pause(750);
+
+        const matched = rule.condition(f);
+
+        const item = document.createElement("div");
+        item.className = "rule " + (matched ? "fired" : "failed");
+
+        item.innerHTML = `
+            <strong>${rule.id}: ${rule.name}</strong><br>
+            IF conditions are satisfied: 
+            <strong>${matched ? "TRUE" : "FALSE"}</strong><br>
+            THEN ${rule.conclusion}
+        `;
+
+        trace.appendChild(item);
+
+        if (matched) {
+            fired.push(rule);
+            item.scrollIntoView({ block: "nearest" });
+            sendParticle("0 2.3 0", "3.8 2.2 -1", "#39e69b");
+            await pause(650);
+
+            /* Stop at the first decisive rule */
+            if (rule.conclusion === "REJECT" ||
+                rule.conclusion === "APPROVE") {
+                break;
+            }
+        }
+
+        await pause(200);
+    }
+
+    let outcome = "REVIEW";
+    let explanation =
+        "No automatic approval or rejection rule was satisfied. The application requires manual assessment.";
+
+    const decisive = fired.find(r =>
+        r.conclusion === "REJECT" || r.conclusion === "APPROVE"
+    );
+
+    if (decisive) {
+        outcome = decisive.conclusion;
+        explanation = decisive.explanation;
+    } else if (fired.length > 0) {
+        outcome = "REVIEW";
+        explanation = fired[0].explanation;
+    }
+
+    await pause(600);
+
+    highlight("decisionNode",
+        outcome === "APPROVE" ? "#39e69b" :
+        outcome === "REJECT" ? "#ff6666" : "#ffd36a"
+    );
+
+    sendParticle("0 2.3 0", "0 1.6 -4",
+        outcome === "APPROVE" ? "#39e69b" :
+        outcome === "REJECT" ? "#ff6666" : "#ffd36a"
+    );
+
+    $("decision").textContent = "DECISION: " + outcome;
+    $("decision").className =
+        outcome === "APPROVE" ? "approved" :
+        outcome === "REJECT" ? "rejected" : "review";
+
+    $("explanation").innerHTML = `
+        <strong>WHY DID THE SYSTEM REACH THIS DECISION?</strong><br>
+        ${explanation}<br><br>
+        <strong>Rule applied:</strong>
+        ${decisive ? decisive.id + " — " + decisive.name :
+          fired.length ? fired[0].id + " — " + fired[0].name :
+          "Default manual assessment"}<br><br>
+        <strong>Debt-to-income ratio:</strong>
+        ${(f.dti * 100).toFixed(1)}%<br>
+        <strong>Disposable income:</strong>
+        KES ${f.disposable.toLocaleString()}<br><br>
+        This is an illustrative educational decision, not a real lending decision.
+    `;
+
+    status.textContent =
+        "Stage 3: Rule evaluation completed. Decision generated.";
+
+    $("activity").textContent =
+        "DECISION GENERATED — The inference engine has completed its reasoning.";
+
+    running = false;
+    $("submitBtn").disabled = false;
+    $("submitBtn").textContent = "RUN EXPERT SYSTEM";
+}
+
+function pause(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/* Submit a new loan application */
+$("loanForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (running) return;
+
+    try {
+        const facts = collectFacts();
+
+        running = true;
+        $("submitBtn").disabled = true;
+        $("submitBtn").textContent = "PROCESSING...";
+
+        $("status").textContent = "Starting consultation...";
+        $("trace").innerHTML = "";
+        $("facts").innerHTML = "";
+
+        displayFacts(facts);
+
+        await runInference(facts);
+
+    } catch (error) {
+        running = false;
+        $("submitBtn").disabled = false;
+        $("submitBtn").textContent = "RUN EXPERT SYSTEM";
+        $("status").textContent = error.message;
+        $("activity").textContent = "INPUT ERROR — Please correct the application.";
+    }
+});
+
+/* Load different applicant examples */
+let exampleIndex = 0;
+
+const examples = [
+    {
+        income: 80000,
+        debt: 15000,
+        expenses: 20000,
+        loan: 200000,
+        credit: 720,
+        employment: 36,
+        collateral: "yes"
+    },
+    {
+        income: 40000,
+        debt: 28000,
+        expenses: 12000,
+        loan: 150000,
+        credit: 450,
+        employment: 4,
+        collateral: "no"
+    },
+    {
+        income: 60000,
+        debt: 18000,
+        expenses: 25000,
+        loan: 250000,
+        credit: 610,
+        employment: 18,
+        collateral: "yes"
+    },
+    {
+        income: 50000,
+        debt: 10000,
+        expenses: 18000,
+        loan: 120000,
+        credit: 690,
+        employment: 24,
+        collateral: "no"
+    }
+];
+
+function loadExample() {
+    const e = examples[exampleIndex % examples.length];
+
+    $("income").value = e.income;
+    $("debt").value = e.debt;
+    $("expenses").value = e.expenses;
+    $("loan").value = e.loan;
+    $("credit").value = e.credit;
+    $("employment").value = e.employment;
+    $("collateral").value = e.collateral;
+
+    exampleIndex++;
+
+    $("activity").textContent =
+        "EXAMPLE LOADED — Click RUN EXPERT SYSTEM to evaluate this applicant.";
+}
+
+/* Reset the simulation */
+function resetSystem() {
+    if (running) return;
+
+    $("loanForm").reset();
+
+    $("facts").innerHTML = "No facts have been entered.";
+    $("trace").innerHTML = "Rules have not been evaluated.";
+
+    $("decision").className = "";
+    $("decision").textContent = "DECISION: PENDING";
+
+    $("explanation").textContent =
+        "Submit an application to see how the expert system reaches its decision.";
+
+    $("status").textContent = "Waiting for a loan application...";
+    $("activity").textContent =
+        "SYSTEM READY — Enter applicant details to begin consultation.";
+
+    $("particles").innerHTML = "";
+
+    highlight("decisionNode", "#38b982");
+    highlight("knowledgeNode", "#c28c35");
+    highlight("memoryNode", "#2399c9");
+}
+</script>
+</body>
+</html>
