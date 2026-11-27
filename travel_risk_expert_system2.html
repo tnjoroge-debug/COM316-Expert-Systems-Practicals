@@ -1,0 +1,757 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Travel Risk Expert System – Animated Simulation</title>
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<style>
+:root{--bg:#081321;--panel:#112239;--line:#294666;--text:#edf5ff;--muted:#9eb3ca;--cyan:#4ce2ef;--green:#49dfa0;--yellow:#ffd166;--orange:#ff9f43;--red:#ff596d;--purple:#b8a0ff}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#07111e,#102641);color:var(--text);font-family:Arial,sans-serif}
+header{padding:16px 22px;background:#091727;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(20px,2.5vw,28px);margin:0}
+header p{color:var(--muted);font-size:12px;margin:5px 0 0}
+.tag{font-size:11px;border:1px solid #3a5c7b;padding:7px 11px;border-radius:20px;color:#bceefa;background:#102a40}
+main{max-width:1700px;margin:auto;padding:14px}
+.layout{display:grid;grid-template-columns:270px minmax(440px,1fr) 340px;gap:12px;align-items:stretch}
+.panel{background:linear-gradient(160deg,#142943,#0d1b2d);border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:0 12px 30px #0004}
+.head{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;font-weight:bold;letter-spacing:.7px;text-transform:uppercase;display:flex;justify-content:space-between;gap:8px}
+.body{padding:13px}
+.muted{color:var(--muted);font-size:11px;line-height:1.5}
+.field{margin:0 0 11px}
+.field label{display:block;font-size:11px;color:#c7d8eb;margin-bottom:5px}
+.field select{width:100%;background:#081727;border:1px solid #35516e;border-radius:7px;padding:9px;color:white}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.check{font-size:10px;line-height:1.3;background:#0a1a2c;border:1px solid #29425e;border-radius:7px;padding:7px;display:flex;gap:6px}
+.check input{accent-color:var(--cyan)}
+button{border:0;border-radius:7px;padding:10px 12px;font-weight:bold;font-size:11px;cursor:pointer;background:var(--cyan);color:#06202a}
+button.alt{background:#2a405b;color:#e6f1ff;border:1px solid #45617e}
+button:disabled{opacity:.4;cursor:not-allowed}
+.buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.middle{display:flex;flex-direction:column;min-height:720px}
+.scene{height:390px;position:relative;background:#789db2;overflow:hidden}
+.scene a-scene{position:absolute!important;inset:0;width:100%;height:100%;z-index:1}
+.overlay{position:absolute;z-index:3;pointer-events:none;background:#061525db;border:1px solid #54718b;border-radius:8px;padding:7px 9px;font-size:10px}
+.sceneTitle{top:9px;left:9px}
+.sceneRisk{top:9px;right:9px;text-align:right}
+.sceneRisk b{display:block;font-size:15px;margin-top:3px;color:var(--green)}
+.sceneCaption{position:absolute;bottom:9px;left:9px;right:9px;z-index:3;background:#061525df;border:1px solid #46617d;border-radius:8px;padding:7px 10px;font-size:10px;line-height:1.4;pointer-events:none}
+.simulationBar{padding:10px 12px;background:#0b1b2d;border-top:1px solid var(--line)}
+.simLabel{display:flex;justify-content:space-between;font-size:10px;color:#bdd1e6;margin-bottom:6px}
+.progress{height:8px;background:#263d56;border-radius:9px;overflow:hidden}
+.progress>div{height:100%;width:0;background:linear-gradient(90deg,#43dcea,#4ce2a2);transition:width .35s}
+.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px 12px;background:#0d2034;border-top:1px solid var(--line)}
+.stage{border:1px solid #304c69;border-radius:8px;padding:7px 5px;text-align:center;font-size:9px;color:#9eb4ca;background:#10243a;min-height:42px}
+.stage.active{border-color:var(--cyan);background:#16445a;color:#fff;box-shadow:0 0 12px #36d9e855}
+.stage.done{border-color:#3ba77e;color:#80efbd}
+.stage b{display:block;font-size:10px;margin-bottom:3px}
+.middleFoot{padding:9px 12px;font-size:10px;color:#adc1d7;background:#0a1929;line-height:1.4}
+.rightBody{display:flex;flex-direction:column;gap:11px}
+.result{border:1px solid #35516e;border-radius:9px;background:#091a2b;padding:11px}
+.resultTop{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.resultTop strong{font-size:12px}
+.badge{border-radius:20px;padding:5px 9px;font-size:10px;font-weight:bold;background:#344a62}
+.badge.LOW{background:#124b3a;color:#85f3c0}
+.badge.MODERATE{background:#58451a;color:#ffe18e}
+.badge.HIGH{background:#633918;color:#ffd09b}
+.badge.CRITICAL{background:#601f31;color:#ffabb6}
+.badge.REVIEW{background:#40346b;color:#d5c9ff}
+.result p{font-size:11px;color:#c2d2e4;line-height:1.5;margin:9px 0 0}
+.sectionTitle{font-size:11px;font-weight:bold;margin-bottom:7px;color:#e2efff}
+.ruleStack{display:flex;flex-direction:column;gap:5px;max-height:260px;overflow:auto}
+.rule{padding:7px 8px;background:#091a2a;border:1px solid #2b4561;border-radius:7px;font-size:10px;transition:.2s}
+.rule.checking{border-color:var(--yellow);background:#403719;box-shadow:0 0 10px #ffd16644;transform:translateX(-2px)}
+.rule.fired{border-color:#3db987;background:#10382f}
+.rule.missed{opacity:.55}
+.ruleLine{display:flex;justify-content:space-between;gap:7px}
+.rule small{display:block;color:#a9bdd2;margin-top:4px;line-height:1.35}
+.state{font-size:9px;font-weight:bold;color:#9aafc4}
+.rule.fired .state{color:var(--green)}
+.rule.checking .state{color:var(--yellow)}
+.explain{font-size:10px;line-height:1.5;white-space:pre-line;color:#c7d7e9;max-height:135px;overflow:auto;background:#091a2a;border:1px solid #29425e;border-radius:7px;padding:9px}
+.lower{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.log{background:#091a2a;border:1px solid #29425e;border-radius:7px;padding:9px;min-height:125px;max-height:165px;overflow:auto;font:10px/1.55 Consolas,monospace;color:#c4d5e8}
+.log div{padding:2px 0;border-bottom:1px solid #1e344b}
+.ok{color:var(--green)}
+.warn{color:var(--yellow)}
+.bad{color:#ff8797}
+.tokenArea{display:flex;gap:5px;flex-wrap:wrap;min-height:28px}
+.token{font-size:9px;padding:5px 7px;border:1px solid #39708b;background:#10334a;color:#c8f7ff;border-radius:15px;animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.kbAdd{display:flex;gap:5px;margin-top:7px}
+.kbAdd select{min-width:0;flex:1;background:#091727;color:white;border:1px solid #35516e;border-radius:6px;padding:7px;font-size:10px}
+.note{font-size:10px;color:#9eb3ca;line-height:1.45;margin-top:7px}
+footer{text-align:center;color:#849bb4;font-size:10px;padding:16px}
+@media(max-width:1150px){.layout{grid-template-columns:260px minmax(400px,1fr)}.right{grid-column:1/-1}.rightBody{display:grid;grid-template-columns:1fr 1fr}.rightBody .result{grid-column:1/-1}}
+@media(max-width:760px){main{padding:8px}.layout{grid-template-columns:1fr}.middle{grid-row:1;min-height:0}.scene{height:350px}.right{grid-column:auto}.rightBody{display:flex}.lower{grid-template-columns:1fr}.pipeline{grid-template-columns:repeat(5,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header>
+<div><h1>Travel Risk Expert System</h1><p>Animated classroom simulation of knowledge-based reasoning and forward chaining</p></div>
+<div class="tag">LIVE SIMULATION · FICTIONAL CASES</div>
+</header>
+<main>
+<div class="layout">
+
+<!-- USER INPUT -->
+<section class="panel">
+<div class="head">1 · User interface <span class="tag">INPUT</span></div>
+<div class="body">
+<p class="muted">Choose a case. Press Start simulation to watch facts enter working memory and rules being evaluated one after another.</p>
+
+<div class="field">
+<label>Destination label</label>
+<select id="destination">
+<option>Kijani Town</option><option>Mtoni Town</option>
+<option>Riverbend Town</option><option>Highland Town</option><option>Baraka Town</option>
+</select>
+</div>
+
+<div class="field">
+<label>Area type</label>
+<select id="area">
+<option value="town">Town centre</option>
+<option value="residential">Residential area</option>
+<option value="remote">Remote / isolated area</option>
+<option value="border">Border / restricted area</option>
+<option value="rural">Rural road</option>
+</select>
+</div>
+
+<div class="field">
+<label>Travel time</label>
+<select id="time">
+<option value="day">Daytime</option>
+<option value="night">Night-time</option>
+</select>
+</div>
+
+<div class="field">
+<label>Reported facts</label>
+<div class="checks">
+<label class="check"><input type="checkbox" id="advisory"> Official do-not-travel advisory</label>
+<label class="check"><input type="checkbox" id="unrest"> Civil unrest / demonstrations</label>
+<label class="check"><input type="checkbox" id="security"> Serious security incidents</label>
+<label class="check"><input type="checkbox" id="blocked"> Road blocked</label>
+<label class="check"><input type="checkbox" id="flood"> Flooding / severe weather</label>
+<label class="check"><input type="checkbox" id="poorroad"> Poor road condition</label>
+<label class="check"><input type="checkbox" id="isolated"> No reliable communication</label>
+<label class="check"><input type="checkbox" id="crowds"> Large unpredictable crowds</label>
+<label class="check"><input type="checkbox" id="unknown"> Key information unavailable</label>
+</div>
+</div>
+
+<div class="field">
+<label>Load a ready-made scenario</label>
+<select id="scenario">
+<option value="">Select scenario…</option>
+<option value="safe">A · Normal daytime journey</option>
+<option value="remote">B · Remote area at night</option>
+<option value="flood">C · Flooded road</option>
+<option value="unrest">D · Demonstrations and crowds</option>
+<option value="advisory">E · Official travel advisory</option>
+<option value="unknown">F · Missing information</option>
+</select>
+</div>
+
+<div class="buttons">
+<button id="start">▶ Start simulation</button>
+<button class="alt" id="step">Next step</button>
+<button class="alt" id="reset">Reset</button>
+</div>
+<p class="note">Use Next step to pause and explain each stage to the class. Start simulation runs the complete sequence automatically.</p>
+</div>
+</section>
+
+<!-- CENTRAL 3D SIMULATION -->
+<section class="panel middle">
+<div class="head">2 · Central 3D town simulation <span class="tag">WATCH THE PERSON</span></div>
+<div class="scene">
+<div class="overlay sceneTitle">SIMULATED DESTINATION<br><b id="townName">KIJANI TOWN</b></div>
+<div class="overlay sceneRisk">SYSTEM STATUS<b id="sceneDecision">WAITING</b></div>
+
+<a-scene embedded vr-mode-ui="enabled:false" renderer="antialias:true;colorManagement:true" background="color:#91b9d0" shadow="type:pcfsoft">
+<a-sky color="#91b9d0"></a-sky>
+<a-light type="ambient" intensity=".8" color="#fff"></a-light>
+<a-light type="directional" position="-4 9 5" intensity="1" cast-shadow="true"></a-light>
+
+<a-plane rotation="-90 0 0" width="40" height="40" color="#78936c"></a-plane>
+<a-plane rotation="-90 0 0" width="6" height="34" position="0 .02 0" color="#414a55"></a-plane>
+<a-entity id="roadLines"></a-entity>
+
+<!-- Houses -->
+<a-entity position="-6 0 -5">
+<a-box position="0 1.5 0" width="3" height="3" depth="2.6" color="#dfc9a8"></a-box>
+<a-cone position="0 3.25 0" radius-bottom="2.1" radius-top="0" height="1" color="#985a49"></a-cone>
+<a-box position="0 1 1.33" width=".65" height="1.2" depth=".06" color="#365c75"></a-box>
+</a-entity>
+
+<a-entity position="6 0 -6">
+<a-box position="0 1.6 0" width="3" height="3.2" depth="2.6" color="#d0d7c8"></a-box>
+<a-box position="0 3.3 0" width="3.2" height=".2" depth="2.8" color="#527a6b"></a-box>
+<a-box position="-.65 1.8 1.33" width=".55" height=".7" depth=".06" color="#547e91"></a-box>
+<a-box position=".65 1.8 1.33" width=".55" height=".7" depth=".06" color="#547e91"></a-box>
+</a-entity>
+
+<a-entity position="-6 0 5">
+<a-box position="0 1.4 0" width="3" height="2.8" depth="2.5" color="#d7b999"></a-box>
+<a-cone position="0 3 0" radius-bottom="2" radius-top="0" height="1" color="#6c8055"></a-cone>
+</a-entity>
+
+<a-entity position="6 0 5">
+<a-box position="0 1.5 0" width="3" height="3" depth="2.5" color="#d7d0b8"></a-box>
+<a-box position="0 3.1 0" width="3.2" height=".2" depth="2.7" color="#a66b4d"></a-box>
+</a-entity>
+
+<a-entity id="trees"></a-entity>
+
+<!-- Destination sign -->
+<a-entity position="0 0 -13">
+<a-cylinder position="0 1 0" radius=".07" height="2" color="#554b3e"></a-cylinder>
+<a-box position="0 2 0" width="3.8" height=".7" depth=".15" color="#17614f"></a-box>
+<a-text id="townBoard" value="KIJANI TOWN" position="-1.55 1.9 .1" width="4" color="#fff"></a-text>
+</a-entity>
+
+<!-- Hazards appear according to selected facts -->
+<a-entity id="floodHazard" visible="false" position="0 .12 -3">
+<a-box width="5.8" height=".16" depth="4.4" color="#218ac6" opacity=".82" material="transparent:true"></a-box>
+<a-text value="FLOODED ROAD" position="-1.3 .4 0" width="4" color="#fff"></a-text>
+</a-entity>
+
+<a-entity id="barrierHazard" visible="false" position="0 0 -3">
+<a-box position="0 .65 0" width="5.4" height=".22" depth=".25" color="#e64b43"></a-box>
+<a-box position="-2.5 .35 0" width=".18" height=".7" depth=".2" color="#222"></a-box>
+<a-box position="2.5 .35 0" width=".18" height=".7" depth=".2" color="#222"></a-box>
+<a-text value="ROAD CLOSED" position="-1.15 1 .2" width="3.5" color="#fff"></a-text>
+</a-entity>
+
+<a-entity id="crowdHazard" visible="false" position="-2 0 -6">
+<a-cylinder position="0 .5 0" radius=".22" height="1" color="#47769a"></a-cylinder>
+<a-sphere position="0 1.15 0" radius=".2" color="#986748"></a-sphere>
+<a-cylinder position=".65 .5 .3" radius=".22" height="1" color="#b36c4c"></a-cylinder>
+<a-sphere position=".65 1.15 .3" radius=".2" color="#80553e"></a-sphere>
+<a-cylinder position="-.65 .5 .35" radius=".22" height="1" color="#4f795b"></a-cylinder>
+<a-sphere position="-.65 1.15 .35" radius=".2" color="#a47755"></a-sphere>
+<a-text value="CROWD / UNREST" position="-1.3 1.8 .1" width="4" color="#ffe4a2"></a-text>
+</a-entity>
+
+<a-entity id="warningHazard" visible="false" position="3 0 -5">
+<a-cone position="0 .75 0" radius-bottom=".48" radius-top=".04" height="1.2" color="#ffb52e"></a-cone>
+<a-text value="WARNING" position="-.7 1.55 .1" width="3" color="#fff0b0"></a-text>
+</a-entity>
+
+<a-entity id="advisoryHazard" visible="false" position="0 0 -9">
+<a-box position="0 1.7 0" width="3.4" height=".9" depth=".18" color="#a9273b"></a-box>
+<a-text value="DO NOT TRAVEL" position="-1.35 1.6 .12" width="4" color="#fff"></a-text>
+</a-entity>
+
+<!-- Traveller: body, head, arms and independently animated legs -->
+<a-entity id="walker" position="0 0 9">
+<a-sphere position="0 1.72 0" radius=".22" color="#986747"></a-sphere>
+<a-cylinder position="0 1.15 0" radius=".24" height=".9" color="#2776a5"></a-cylinder>
+
+<a-entity id="leftLeg" position="-.12 .72 0">
+<a-cylinder position="0 -.25 0" radius=".075" height=".52" color="#24364c"></a-cylinder>
+</a-entity>
+
+<a-entity id="rightLeg" position=".12 .72 0">
+<a-cylinder position="0 -.25 0" radius=".075" height=".52" color="#24364c"></a-cylinder>
+</a-entity>
+
+<a-entity id="leftArm" position="-.29 1.35 0">
+<a-cylinder position="0 -.22 0" radius=".065" height=".48" color="#986747" rotation="0 0 12"></a-cylinder>
+</a-entity>
+
+<a-entity id="rightArm" position=".29 1.35 0">
+<a-cylinder position="0 -.22 0" radius=".065" height=".48" color="#986747" rotation="0 0 -12"></a-cylinder>
+</a-entity>
+
+<a-box position=".28 1.2 -.1" width=".25" height=".35" depth=".16" color="#d6a13e"></a-box>
+<a-text value="TRAVELLER" position="-.65 2.1 0" width="3" color="#12334c"></a-text>
+</a-entity>
+
+<a-entity id="route">
+<a-cylinder position="0 .06 0" rotation="90 0 0" radius=".045" height="17" color="#36e5ed" opacity=".8"></a-cylinder>
+</a-entity>
+
+<a-camera position="0 6.5 19" rotation="-13 0 0" look-controls="enabled:false" wasd-controls="enabled:false" fov="60"></a-camera>
+</a-scene>
+
+<div class="sceneCaption" id="sceneCaption">Waiting for a case. The traveller will walk when the simulation starts. Watch the rule panel on the right as each rule is tested.</div>
+</div>
+
+<div class="simulationBar">
+<div class="simLabel"><span id="simMessage">Simulation ready</span><span id="percent">0%</span></div>
+<div class="progress"><div id="progressFill"></div></div>
+</div>
+
+<div class="pipeline">
+<div class="stage" id="stage1"><b>01 · INPUT</b>User facts</div>
+<div class="stage" id="stage2"><b>02 · MEMORY</b>Store facts</div>
+<div class="stage" id="stage3"><b>03 · KNOWLEDGE</b>Check rules</div>
+<div class="stage" id="stage4"><b>04 · INFERENCE</b>Fire rules</div>
+<div class="stage" id="stage5"><b>05 · OUTPUT</b>Explain result</div>
+</div>
+
+<div class="middleFoot"><b>What is happening?</b> The highlighted stage shows the current operation. The rule list lights up as the inference engine checks each IF–THEN rule. A green rule has fired; a dim rule did not match.</div>
+</section>
+
+<!-- KNOWLEDGE BASE AND INFERENCE -->
+<section class="panel right">
+<div class="head">3 · Knowledge & inference <span class="tag">RULE ENGINE</span></div>
+<div class="body rightBody">
+
+<div class="result">
+<div class="resultTop"><strong>Expert system conclusion</strong><span id="riskBadge" class="badge">WAITING</span></div>
+<p id="resultText">Run a scenario to see the system's recommendation.</p>
+</div>
+
+<div>
+<div class="sectionTitle">Knowledge base — rules being checked</div>
+<div class="ruleStack" id="rules"></div>
+</div>
+
+<div>
+<div class="sectionTitle">Explanation facility — why this result?</div>
+<div class="explain" id="explanation">The explanation will appear after the inference engine completes its checks.</div>
+</div>
+
+<div>
+<div class="sectionTitle">Knowledge acquisition — add a rule</div>
+<div class="muted">Add a simple teaching rule. It will be checked in the next run.</div>
+<div class="kbAdd">
+<select id="newFact">
+<option value="isolated">No communication</option>
+<option value="poorroad">Poor road</option>
+<option value="crowds">Large crowds</option>
+<option value="flood">Flooding</option>
+<option value="security">Security incident</option>
+</select>
+<select id="newLevel">
+<option>HIGH</option><option>CRITICAL</option><option>MODERATE</option>
+</select>
+<button id="addRule">Add</button>
+</div>
+<div class="note" id="kbCount">9 core rules in knowledge base.</div>
+</div>
+
+</div>
+</section>
+</div>
+
+<!-- WORKING MEMORY AND ACTIVITY LOG -->
+<div class="lower">
+<section class="panel">
+<div class="head">4 · Working memory <span class="tag">FACTS STORED</span></div>
+<div class="body">
+<div class="muted">The facts collected from the user are stored here before reasoning begins.</div>
+<div id="tokens" class="tokenArea" style="margin-top:9px"><span class="muted">No facts yet.</span></div>
+<div id="memoryLog" class="log" style="margin-top:9px">Working memory is empty.</div>
+</div>
+</section>
+
+<section class="panel">
+<div class="head">5 · Inference engine activity <span class="tag">LIVE TRACE</span></div>
+<div class="body">
+<div id="activity" class="log">System initialised. Waiting for user input.</div>
+</div>
+</section>
+</div>
+</main>
+
+<footer>Fictional classroom simulation only. No live security, weather, police, road or government advisory data is used. Do not use this demonstration for real travel decisions.</footer>
+
+<script>
+const $=id=>document.getElementById(id);
+
+const labels={
+advisory:'Official do-not-travel advisory',
+unrest:'Civil unrest / demonstrations',
+security:'Serious security incidents',
+blocked:'Road blocked',
+flood:'Flooding / severe weather',
+poorroad:'Poor road condition',
+isolated:'No reliable communication',
+crowds:'Large unpredictable crowds',
+unknown:'Key safety information unavailable'
+};
+
+const rank={LOW:1,REVIEW:2,MODERATE:3,HIGH:4,CRITICAL:5};
+let custom=[],cursor=0,timer=null,caseData=null,matched=[];
+
+const core=[
+{id:'R1',name:'Official travel advisory',out:'CRITICAL',why:'An official do-not-travel advisory is selected.',test:f=>f.advisory},
+{id:'R2',name:'Civil unrest',out:'HIGH',why:'Civil unrest or demonstrations are reported.',test:f=>f.unrest},
+{id:'R3',name:'Serious security incidents',out:'HIGH',why:'Serious security incidents are reported.',test:f=>f.security},
+{id:'R4',name:'Blocked route',out:'HIGH',why:'The intended road is blocked.',test:f=>f.blocked},
+{id:'R5',name:'Flooding or severe weather',out:'HIGH',why:'Flooding or severe weather affects the route.',test:f=>f.flood},
+{id:'R6',name:'Remote area at night',out:'HIGH',why:'Travel is planned at night in a remote or border area.',test:f=>(f.area==='remote'||f.area==='border')&&f.time==='night'},
+{id:'R7',name:'Multiple moderate factors',out:'MODERATE',why:'At least two moderate factors are present.',test:f=>[f.poorroad,f.isolated,f.crowds].filter(Boolean).length>=2},
+{id:'R8',name:'Normal conditions',out:'LOW',why:'No major hazard is selected and fewer than two moderate factors are present.',test:f=>!f.advisory&&!f.unrest&&!f.security&&!f.blocked&&!f.flood&&!((f.area==='remote'||f.area==='border')&&f.time==='night')&&!f.unknown&&[f.poorroad,f.isolated,f.crowds].filter(Boolean).length<2},
+{id:'R9',name:'Insufficient information',out:'REVIEW',why:'Important safety information is unavailable.',test:f=>f.unknown}
+];
+
+function allRules(){return [...core,...custom]}
+
+function log(id,msg,cls=''){
+let d=document.createElement('div');
+d.textContent=msg;
+if(cls)d.className=cls;
+$(id).appendChild(d);
+$(id).scrollTop=$(id).scrollHeight;
+}
+
+function factsFromUI(){
+let f={destination:$('destination').value,area:$('area').value,time:$('time').value};
+Object.keys(labels).forEach(k=>f[k]=$(k).checked);
+return f;
+}
+
+function factArray(f){
+let a=[`Destination: ${f.destination}`,`Area: ${f.area}`,`Travel time: ${f.time}`];
+Object.keys(labels).forEach(k=>{if(f[k])a.push(labels[k])});
+if(!Object.keys(labels).some(k=>f[k]))a.push('No additional hazard selected');
+return a;
+}
+
+function setStage(n){
+for(let i=1;i<=5;i++){
+$('stage'+i).classList.toggle('active',i===n);
+$('stage'+i).classList.toggle('done',i<n);
+}
+}
+
+function progress(p,msg){
+$('progressFill').style.width=p+'%';
+$('percent').textContent=p+'%';
+$('simMessage').textContent=msg;
+}
+
+function renderRules(){
+let host=$('rules');
+host.innerHTML='';
+allRules().forEach(r=>{
+let d=document.createElement('div');
+d.className='rule';
+d.id='rule_'+r.id;
+d.innerHTML=`<div class="ruleLine"><b>${r.id} · ${r.name}</b><span class="state">WAITING</span></div><small>IF condition is true THEN ${r.out} risk.</small>`;
+host.appendChild(d);
+});
+}
+
+function addFactTokens(f){
+$('tokens').innerHTML='';
+factArray(f).forEach(x=>{
+let s=document.createElement('span');
+s.className='token';
+s.textContent=x;
+$('tokens').appendChild(s);
+});
+}
+
+function setupScene(f){
+$('townName').textContent=f.destination.toUpperCase();
+$('townBoard').setAttribute('value',f.destination.toUpperCase());
+$('floodHazard').setAttribute('visible',!!f.flood);
+$('barrierHazard').setAttribute('visible',!!f.blocked);
+$('crowdHazard').setAttribute('visible',!!(f.unrest||f.crowds));
+$('warningHazard').setAttribute('visible',!!(f.security||f.poorroad||f.isolated));
+$('advisoryHazard').setAttribute('visible',!!f.advisory);
+$('route').setAttribute('visible',true);
+$('walker').setAttribute('position','0 0 9');
+$('leftLeg').setAttribute('rotation','0 0 0');
+$('rightLeg').setAttribute('rotation','0 0 0');
+$('leftArm').setAttribute('rotation','0 0 0');
+$('rightArm').setAttribute('rotation','0 0 0');
+document.querySelector('a-sky').setAttribute('color','#91b9d0');
+}
+
+function walkPerson(){
+let w=$('walker');
+w.setAttribute('animation__walk',{
+property:'position',to:'0 0 -1.8',dur:8500,easing:'linear'
+});
+
+['leftLeg','rightArm'].forEach(id=>{
+$(id).setAttribute('animation__swing',{
+property:'rotation',from:'-25 0 0',to:'25 0 0',
+dir:'alternate',loop:true,dur:420,easing:'easeInOutSine'
+});
+});
+
+['rightLeg','leftArm'].forEach(id=>{
+$(id).setAttribute('animation__swing',{
+property:'rotation',from:'25 0 0',to:'-25 0 0',
+dir:'alternate',loop:true,dur:420,easing:'easeInOutSine'
+});
+});
+}
+
+function stopWalk(){
+['leftLeg','rightLeg','leftArm','rightArm'].forEach(id=>$(id).removeAttribute('animation__swing'));
+$('walker').removeAttribute('animation__walk');
+}
+
+function finalise(){
+let outcome=matched.length?matched.map(x=>x.out).sort((a,b)=>rank[b]-rank[a])[0]:'REVIEW';
+
+let msg={
+CRITICAL:'Critical risk indicated. Do not proceed under the conditions entered; verify official guidance and safer alternatives.',
+HIGH:'High risk indicated. Postpone or change the journey until the reported hazards are resolved and independently verified.',
+MODERATE:'Moderate risk indicated. Review the risk factors, verify local conditions and consider safer timing or routes.',
+REVIEW:'The system cannot make a confident assessment because key information is missing. Verify conditions before deciding.',
+LOW:'No major risk factor was identified in the entered facts. Continue checking current official and local information.'
+}[outcome];
+
+$('riskBadge').textContent=outcome+' RISK';
+$('riskBadge').className='badge '+outcome;
+$('resultText').textContent=msg;
+$('sceneDecision').textContent=outcome;
+
+$('sceneDecision').style.color={
+LOW:'#49dfa0',MODERATE:'#ffd166',HIGH:'#ff9f43',
+CRITICAL:'#ff596d',REVIEW:'#b8a0ff'
+}[outcome];
+
+$('explanation').textContent=
+`CASE: ${caseData.destination}
+
+FACTS STORED IN WORKING MEMORY
+${factArray(caseData).map(x=>'• '+x).join('\n')}
+
+RULES THAT FIRED
+${matched.length?matched.map(x=>`• ${x.id}: ${x.name} → ${x.out}`).join('\n'):'• No rule matched.'}
+
+DECISION: ${outcome}
+${msg}
+
+The inference engine selects the highest-priority conclusion among all matched rules. This is an illustrative teaching model.`;
+
+document.querySelector('a-sky').setAttribute('color',
+outcome==='CRITICAL'?'#936b78':
+outcome==='HIGH'?'#b38b73':
+outcome==='MODERATE'?'#b7a878':
+outcome==='REVIEW'?'#9990b9':'#91b9d0');
+
+$('sceneCaption').textContent=
+`Inference complete: ${outcome}. ${matched.length} rule(s) fired. The person has reached the assessment point; the system's conclusion is shown on the right.`;
+
+progress(100,'Inference complete — explanation generated');
+setStage(5);
+stopWalk();
+
+log('activity',`[DECISION] Overall assessment = ${outcome}.`,'warn');
+log('activity','[EXPLANATION] Result linked to matched facts and rules.','ok');
+}
+
+function showRule(i){
+let rules=allRules();
+if(i>=rules.length){finalise();return}
+
+let r=rules[i];
+let el=$('rule_'+r.id);
+let hit=!!r.test(caseData);
+
+el.classList.add('checking');
+el.querySelector('.state').textContent='CHECKING…';
+
+progress(Math.round(48+(i+1)/rules.length*42),
+`Inference engine: evaluating ${r.id} — ${r.name}`);
+
+log('activity',`[INFERENCE] Checking ${r.id}: IF ${r.name} ...`);
+
+$('sceneCaption').textContent=
+`The inference engine is checking ${r.id}: ${r.name}. It compares this rule's condition with the facts stored in working memory.`;
+
+setTimeout(()=>{
+el.classList.remove('checking');
+
+if(hit){
+el.classList.add('fired');
+el.querySelector('.state').textContent='RULE FIRED';
+matched.push(r);
+log('activity',`[RULE FIRED] ${r.id} → ${r.out}. ${r.why}`,'ok');
+}else{
+el.classList.add('missed');
+el.querySelector('.state').textContent='NOT MATCHED';
+log('activity',`[NOT FIRED] ${r.id}: condition is false.`);
+}
+
+cursor++;
+if(timer)timer=setTimeout(()=>showRule(cursor),650);
+},600);
+}
+
+function startSimulation(){
+if(timer){clearTimeout(timer);timer=null}
+
+caseData=factsFromUI();
+matched=[];
+cursor=0;
+
+renderRules();
+
+$('memoryLog').innerHTML='';
+factArray(caseData).forEach(x=>log('memoryLog','FACT: '+x));
+addFactTokens(caseData);
+
+$('activity').innerHTML='';
+log('activity','[USER INTERFACE] Case submitted.','ok');
+log('activity','[WORKING MEMORY] Facts stored.','ok');
+
+$('riskBadge').textContent='PROCESSING';
+$('riskBadge').className='badge';
+$('resultText').textContent='The inference engine is evaluating the knowledge base…';
+$('explanation').textContent='Waiting for rule evaluation to finish.';
+
+setupScene(caseData);
+walkPerson();
+setStage(1);
+progress(5,'Collecting facts from user interface');
+
+$('sceneCaption').textContent='The traveller starts walking. The system is collecting the user-entered facts before checking its rules.';
+
+timer=setTimeout(()=>{
+setStage(2);
+progress(22,'Storing facts in working memory');
+log('activity','[WORKING MEMORY] Current facts are ready for matching.','ok');
+
+$('sceneCaption').textContent='Facts are now stored in working memory. The system will compare these facts against the knowledge base.';
+
+timer=setTimeout(()=>{
+setStage(3);
+progress(42,'Loading knowledge-base rules');
+log('activity',`[KNOWLEDGE BASE] ${allRules().length} IF–THEN rules loaded.`,'ok');
+
+setStage(4);
+cursor=0;
+timer=setTimeout(()=>showRule(cursor),550);
+},850);
+},900);
+}
+
+function nextStep(){
+if(timer){
+clearTimeout(timer);
+timer=null;
+if(cursor<allRules().length){showRule(cursor)}
+else{finalise()}
+return;
+}
+if(!caseData){startSimulation();return}
+if(cursor<allRules().length)showRule(cursor);
+else finalise();
+}
+
+function reset(){
+if(timer)clearTimeout(timer);
+timer=null;
+caseData=null;
+matched=[];
+cursor=0;
+stopWalk();
+
+$('walker').setAttribute('position','0 0 9');
+$('floodHazard').setAttribute('visible',false);
+$('barrierHazard').setAttribute('visible',false);
+$('crowdHazard').setAttribute('visible',false);
+$('warningHazard').setAttribute('visible',false);
+$('advisoryHazard').setAttribute('visible',false);
+$('route').setAttribute('visible',true);
+
+document.querySelector('a-sky').setAttribute('color','#91b9d0');
+
+$('sceneDecision').textContent='WAITING';
+$('sceneDecision').style.color='#49dfa0';
+$('sceneCaption').textContent='Waiting for a case. The traveller will walk when the simulation starts. Watch the rule panel on the right as each rule is tested.';
+
+$('riskBadge').textContent='WAITING';
+$('riskBadge').className='badge';
+$('resultText').textContent='Run a scenario to see the system recommendation.';
+$('explanation').textContent='The explanation will appear after the inference engine completes its checks.';
+
+$('tokens').innerHTML='<span class="muted">No facts yet.</span>';
+$('memoryLog').textContent='Working memory is empty.';
+$('activity').textContent='System reset. Waiting for user input.';
+
+$('progressFill').style.width='0%';
+$('percent').textContent='0%';
+$('simMessage').textContent='Simulation ready';
+
+for(let i=1;i<=5;i++)$('stage'+i).className='stage';
+renderRules();
+}
+
+const scenarios={
+safe:{area:'town',time:'day',checks:[],destination:'Kijani Town'},
+remote:{area:'remote',time:'night',checks:[],destination:'Highland Town'},
+flood:{area:'rural',time:'day',checks:['flood','poorroad'],destination:'Riverbend Town'},
+unrest:{area:'town',time:'day',checks:['unrest','crowds'],destination:'Mtoni Town'},
+advisory:{area:'border',time:'day',checks:['advisory'],destination:'Baraka Town'},
+unknown:{area:'residential',time:'day',checks:['unknown'],destination:'Kijani Town'}
+};
+
+$('scenario').addEventListener('change',e=>{
+let s=scenarios[e.target.value];
+if(!s)return;
+
+Object.keys(labels).forEach(k=>$(k).checked=false);
+s.checks.forEach(k=>$(k).checked=true);
+$('area').value=s.area;
+$('time').value=s.time;
+$('destination').value=s.destination;
+reset();
+});
+
+$('start').addEventListener('click',startSimulation);
+$('step').addEventListener('click',nextStep);
+$('reset').addEventListener('click',reset);
+
+$('addRule').addEventListener('click',()=>{
+let f=$('newFact').value;
+let o=$('newLevel').value;
+let id='U'+(custom.length+1);
+
+custom.push({
+id,
+name:'User rule: '+labels[f],
+out:o,
+why:`User-added rule: ${labels[f]} is linked to ${o}.`,
+test:x=>!!x[f]
+});
+
+$('kbCount').textContent=
+`${core.length} core rules + ${custom.length} user-added rule(s).`;
+
+renderRules();
+
+log('activity',`[KNOWLEDGE ACQUISITION] Added ${id}: IF ${labels[f]} THEN ${o}.`,'ok');
+});
+
+// Generate road markings
+for(let z=-15;z<=12;z+=3){
+let m=document.createElement('a-box');
+m.setAttribute('position',`0 .04 ${z}`);
+m.setAttribute('width','.12');
+m.setAttribute('height','.025');
+m.setAttribute('depth','1.2');
+m.setAttribute('color','#f4e8b5');
+$('roadLines').appendChild(m);
+}
+
+// Generate trees
+[[-9,-10],[-9,0],[-9,9],[9,-10],[9,0],[9,9]].forEach(([x,z])=>{
+let t=document.createElement('a-entity');
+t.setAttribute('position',`${x} 0 ${z}`);
+t.innerHTML='<a-cylinder position="0 .75 0" radius=".13" height="1.5" color="#70543b"></a-cylinder><a-sphere position="0 1.8 0" radius=".9" color="#4d8050"></a-sphere>';
+$('trees').appendChild(t);
+});
+
+renderRules();
+$('kbCount').textContent='9 core rules in knowledge base.';
+</script>
+</body>
+</html>
