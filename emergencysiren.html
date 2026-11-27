@@ -1,0 +1,1462 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hospital Ticketing and Expert Screening System</title>
+
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#eef2f6;
+  color:#1e293b;
+}
+header{
+  background:#123c60;
+  color:white;
+  padding:15px 20px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+}
+header h1{font-size:20px;margin:0}
+header small{opacity:.85}
+.status-pill{
+  background:#16845b;
+  padding:7px 12px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:bold;
+}
+#emergencyBanner{
+  display:none;
+  background:#b91c1c;
+  color:white;
+  text-align:center;
+  padding:13px;
+  font-weight:bold;
+  animation:flash .7s infinite alternate;
+}
+@keyframes flash{
+  from{background:#b91c1c}
+  to{background:#f97316}
+}
+.layout{
+  display:grid;
+  grid-template-columns:300px minmax(400px,1fr) 320px;
+  gap:12px;
+  padding:12px;
+  max-width:1800px;
+  margin:auto;
+}
+.panel{
+  background:white;
+  border-radius:10px;
+  padding:14px;
+  box-shadow:0 2px 8px #00000012;
+  min-width:0;
+}
+.panel h2{
+  font-size:16px;
+  margin:0 0 12px;
+  color:#123c60;
+  border-bottom:1px solid #e2e8f0;
+  padding-bottom:9px;
+}
+.panel h3{font-size:13px;margin:14px 0 7px}
+label{
+  display:block;
+  font-size:12px;
+  font-weight:bold;
+  margin:9px 0 5px;
+}
+input,select{
+  width:100%;
+  padding:9px;
+  border:1px solid #cbd5e1;
+  border-radius:6px;
+  background:white;
+}
+.checks{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  font-size:12px;
+}
+.checks label{
+  font-weight:normal;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin:2px 0;
+}
+.checks input{width:auto}
+button{
+  border:0;
+  border-radius:6px;
+  padding:10px;
+  cursor:pointer;
+  font-weight:bold;
+  font-size:12px;
+  margin:4px 2px 4px 0;
+}
+button:disabled{opacity:.45;cursor:not-allowed}
+.primary{background:#0877bd;color:white}
+.secondary{background:#e2e8f0;color:#1e293b}
+.danger{background:#b91c1c;color:white}
+.success{background:#16845b;color:white}
+.warning{background:#f59e0b;color:#111827}
+.full{width:100%}
+.button-row{display:flex;flex-wrap:wrap;gap:4px}
+#sceneWrap{
+  background:#dbeafe;
+  border-radius:9px;
+  overflow:hidden;
+  position:relative;
+  min-height:530px;
+}
+#sceneWrap a-scene{
+  width:100%;
+  height:530px;
+}
+.scene-caption{
+  background:#123c60;
+  color:white;
+  padding:9px;
+  font-size:12px;
+}
+.metrics{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.metric{
+  background:#f1f5f9;
+  border-radius:7px;
+  padding:10px;
+}
+.metric strong{
+  display:block;
+  font-size:22px;
+  color:#123c60;
+}
+.metric span{font-size:11px;color:#64748b}
+.destination{
+  background:#eff6ff;
+  border-left:4px solid #0284c7;
+  padding:10px;
+  border-radius:5px;
+  font-size:12px;
+  line-height:1.5;
+}
+.destination.emergency{
+  background:#fef2f2;
+  border-color:#dc2626;
+}
+#currentTicket{
+  font-size:25px;
+  font-weight:bold;
+  color:#0877bd;
+}
+#queueList,#eventLog{
+  max-height:180px;
+  overflow:auto;
+  font-size:11px;
+}
+.queue-item,.log-item{
+  border-bottom:1px solid #e2e8f0;
+  padding:7px 3px;
+}
+.log-item{line-height:1.4}
+.tag{
+  display:inline-block;
+  border-radius:4px;
+  padding:3px 5px;
+  font-size:10px;
+  font-weight:bold;
+  background:#e2e8f0;
+}
+.tag.red{background:#fee2e2;color:#991b1b}
+.tag.green{background:#dcfce7;color:#166534}
+.tag.orange{background:#ffedd5;color:#9a3412}
+.tag.blue{background:#dbeafe;color:#1e40af}
+.rule{
+  font-size:11px;
+  padding:5px 0;
+  border-bottom:1px dashed #e2e8f0;
+}
+#systemStatus{
+  padding:9px;
+  background:#ecfdf5;
+  border-radius:6px;
+  color:#166534;
+  font-size:12px;
+  font-weight:bold;
+}
+#systemStatus.locked{
+  background:#fee2e2;
+  color:#991b1b;
+}
+.note{
+  font-size:10px;
+  color:#64748b;
+  line-height:1.5;
+}
+@media(max-width:1100px){
+  .layout{grid-template-columns:1fr 1fr}
+  .visual-panel{grid-column:1/-1;grid-row:1}
+}
+@media(max-width:650px){
+  .layout{grid-template-columns:1fr}
+  .visual-panel{grid-column:auto}
+  #sceneWrap a-scene{height:420px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div>
+    <h1>Hospital Ticketing and Expert Screening System</h1>
+    <small>Interactive expert system simulation: registration, triage and patient routing</small>
+  </div>
+  <div id="headerStatus" class="status-pill">HOSPITAL OPERATIONAL</div>
+</header>
+
+<div id="emergencyBanner">
+  🚨 EMERGENCY RESPONSE ACTIVE — TICKET ISSUANCE AND ROUTINE SCREENING TEMPORARILY SUSPENDED
+  <span id="emergencyCountdown">20 seconds remaining</span>
+</div>
+
+<div class="layout">
+
+<!-- LEFT: PATIENT REGISTRATION -->
+<section class="panel">
+  <h2>1. Patient Registration & Ticketing</h2>
+
+  <div id="systemStatus">System operational — accepting patients</div>
+
+  <label>Patient name</label>
+  <input id="patientName" placeholder="Enter patient name">
+
+  <label>Age group</label>
+  <select id="ageGroup">
+    <option>Adult</option>
+    <option>Child</option>
+    <option>Older adult</option>
+  </select>
+
+  <h3>Reported symptoms</h3>
+  <div class="checks">
+    <label><input type="checkbox" value="fever"> Fever</label>
+    <label><input type="checkbox" value="cough"> Cough</label>
+    <label><input type="checkbox" value="sore throat"> Sore throat</label>
+    <label><input type="checkbox" value="headache"> Headache</label>
+    <label><input type="checkbox" value="fatigue"> Fatigue</label>
+    <label><input type="checkbox" value="breathlessness"> Breathlessness</label>
+    <label><input type="checkbox" value="chest pain"> Chest pain</label>
+    <label><input type="checkbox" value="confusion"> Confusion</label>
+    <label><input type="checkbox" value="blue lips"> Blue lips</label>
+    <label><input type="checkbox" value="loss of taste"> Loss of taste</label>
+    <label><input type="checkbox" value="loss of smell"> Loss of smell</label>
+    <label><input type="checkbox" value="vomiting"> Vomiting</label>
+    <label><input type="checkbox" value="diarrhoea"> Diarrhoea</label>
+    <label><input type="checkbox" value="no symptoms"> No symptoms</label>
+  </div>
+
+  <label>COVID-19 exposure history</label>
+  <select id="exposure">
+    <option value="no">No known exposure</option>
+    <option value="yes">Recent exposure</option>
+  </select>
+
+  <label>COVID-19 test result</label>
+  <select id="covidTest">
+    <option value="unknown">Not tested / unknown</option>
+    <option value="positive">Positive</option>
+    <option value="negative">Negative</option>
+  </select>
+
+  <button class="primary full" id="issueBtn" onclick="registerPatient()">
+    🎟️ Register Patient & Issue Ticket
+  </button>
+
+  <div class="button-row">
+    <button class="secondary" onclick="demoPatient()">Add Demo Patient</button>
+    <button class="secondary" onclick="clearForm()">Clear Form</button>
+  </div>
+
+  <h3>Current ticket</h3>
+  <div id="currentTicket">---</div>
+  <div id="ticketMessage" class="note">No ticket issued yet.</div>
+
+  <h3>Hospital operations</h3>
+  <div class="button-row">
+    <button class="success" onclick="startAuto()">Start Arrivals</button>
+    <button class="warning" onclick="stopAuto()">Pause Arrivals</button>
+  </div>
+  <div class="button-row">
+    <button class="primary" onclick="enableSound()">🔊 Enable Sound</button>
+    <button class="secondary" onclick="muteSound()">Mute</button>
+  </div>
+  <button class="danger full" onclick="resetSystem()">Reset Simulation</button>
+
+  <h3>Waiting queue</h3>
+  <div id="queueList">No patients waiting.</div>
+</section>
+
+
+<!-- CENTRE: 3D HOSPITAL -->
+<section class="panel visual-panel">
+  <h2>2. Live Hospital Environment</h2>
+
+  <div id="sceneWrap">
+    <a-scene embedded
+      vr-mode-ui="enabled:false"
+      renderer="antialias:true; colorManagement:true"
+      background="color:#dbeafe">
+
+      <a-assets>
+        <a-mixin id="whiteMaterial" material="color:#ffffff; roughness:0.8"></a-mixin>
+      </a-assets>
+
+      <a-plane rotation="-90 0 0"
+        width="24" height="19"
+        color="#dbe4eb"
+        position="0 0 0"></a-plane>
+
+      <!-- BACK WALL -->
+      <a-box position="0 2 -7"
+        width="23" height="4" depth=".25"
+        color="#e8f1f8"></a-box>
+
+      <a-box position="0 3.8 -6.85"
+        width="23" height=".25" depth=".3"
+        color="#123c60"></a-box>
+
+      <a-text value="KARATINA GENERAL HOSPITAL"
+        position="0 3.1 -6.65"
+        align="center" color="#123c60"
+        width="12"></a-text>
+
+      <!-- RECEPTION -->
+      <a-box position="0 .65 -2.2"
+        width="4.2" height="1.2" depth=".8"
+        color="#256b91"></a-box>
+      <a-box position="0 1.28 -2.2"
+        width="4.4" height=".12" depth=".9"
+        color="#dbeafe"></a-box>
+      <a-text value="SCREENING / TRIAGE"
+        position="0 1.65 -2.2"
+        align="center" color="#123c60" width="5"></a-text>
+
+      <!-- TICKET KIOSK -->
+      <a-box position="-5 .8 1"
+        width="1.1" height="1.6" depth=".7"
+        color="#123c60"></a-box>
+      <a-box position="-5 1.05 .62"
+        width=".7" height=".35" depth=".04"
+        color="#7dd3fc"></a-box>
+      <a-text value="TICKET KIOSK"
+        position="-5 1.9 1"
+        align="center" color="#123c60" width="3"></a-text>
+
+      <!-- WAITING AREA -->
+      <a-box position="0 .05 3.8"
+        width="12" height=".1" depth="5"
+        color="#cbd5e1"></a-box>
+      <a-text value="PATIENT WAITING AREA"
+        position="0 .5 1.2"
+        align="center" color="#334155" width="6"></a-text>
+
+      <!-- CHAIRS -->
+      <a-entity id="chairs"></a-entity>
+
+      <!-- GENERAL RECEPTION -->
+      <a-box position="6 .65 -2.2"
+        width="2.6" height="1.2" depth="1"
+        color="#0f766e"></a-box>
+      <a-text value="GENERAL RECEPTION"
+        position="6 1.65 -2.2"
+        align="center" color="#0f766e" width="5"></a-text>
+
+      <!-- RESPIRATORY UNIT -->
+      <a-box position="6 .55 3"
+        width="2.8" height="1.1" depth="1.2"
+        color="#ca8a04"></a-box>
+      <a-text value="RESPIRATORY ASSESSMENT"
+        position="6 1.55 3"
+        align="center" color="#92400e" width="5"></a-text>
+
+      <!-- EMERGENCY UNIT -->
+      <a-box position="-6 .55 -3.2"
+        width="2.8" height="1.1" depth="1.2"
+        color="#b91c1c"></a-box>
+      <a-text value="EMERGENCY UNIT"
+        position="-6 1.55 -3.2"
+        align="center" color="#b91c1c" width="4"></a-text>
+
+      <!-- CLINICAL REVIEW -->
+      <a-box position="-6 .55 3"
+        width="2.8" height="1.1" depth="1.2"
+        color="#7c3aed"></a-box>
+      <a-text value="CLINICAL REVIEW"
+        position="-6 1.55 3"
+        align="center" color="#6d28d9" width="4"></a-text>
+
+      <!-- DESTINATION BOARD -->
+      <a-box position="0 2.7 -6.35"
+        width="5.2" height=".85" depth=".15"
+        color="#172554"></a-box>
+      <a-text id="sceneDestination"
+        value="PATIENT DESTINATION: AWAITING ASSESSMENT"
+        position="0 2.75 -6.23"
+        align="center" color="#ffffff" width="5"></a-text>
+
+      <!-- STAFF AND PATIENT CONTAINERS -->
+      <a-entity id="staffLayer"></a-entity>
+      <a-entity id="patientLayer"></a-entity>
+
+      <!-- LIGHTING -->
+      <a-entity light="type:ambient; intensity:1.1"></a-entity>
+      <a-entity light="type:directional; intensity:1"
+        position="-3 8 5"></a-entity>
+
+      <!-- CAMERA -->
+      <a-entity camera
+        position="0 11 18"
+        rotation="-27 0 0"
+        look-controls="enabled:false"></a-entity>
+
+    </a-scene>
+  </div>
+
+  <div class="scene-caption">
+    Live simulation: ticketing, waiting patients, moving hospital staff,
+    screening and destination routing.
+  </div>
+
+  <h3>Latest patient routing decision</h3>
+  <div id="destinationPanel" class="destination">
+    No patient has been assessed yet.
+  </div>
+</section>
+
+
+<!-- RIGHT: EXPERT SYSTEM -->
+<section class="panel">
+  <h2>3. Expert System Dashboard</h2>
+
+  <div class="metrics">
+    <div class="metric"><strong id="issuedCount">0</strong><span>Tickets issued</span></div>
+    <div class="metric"><strong id="screenedCount">0</strong><span>Patients screened</span></div>
+    <div class="metric"><strong id="waitingCount">0</strong><span>Waiting patients</span></div>
+    <div class="metric"><strong id="emergencyCount">0</strong><span>Emergency cases</span></div>
+  </div>
+
+  <h3>Expert system decision</h3>
+  <div id="decisionBox" class="destination">
+    Waiting for patient assessment.
+  </div>
+
+  <h3>Knowledge base — sample rules</h3>
+  <div class="rule"><b>R1:</b> Chest pain, severe breathlessness, confusion or blue lips → Emergency.</div>
+  <div class="rule"><b>R2:</b> Positive COVID test → Respiratory assessment.</div>
+  <div class="rule"><b>R3:</b> Respiratory symptoms + exposure → Respiratory assessment.</div>
+  <div class="rule"><b>R4:</b> Loss of taste/smell + respiratory symptoms → Respiratory assessment.</div>
+  <div class="rule"><b>R5:</b> Fever, cough or sore throat → Clinical review.</div>
+  <div class="rule"><b>R6:</b> No symptoms → General reception.</div>
+  <div class="rule"><b>R7:</b> Insufficient information → Clinical review.</div>
+
+  <h3>Working memory</h3>
+  <div id="workingMemory" class="destination">
+    No patient facts loaded.
+  </div>
+
+  <h3>Explanation facility</h3>
+  <div id="explanation" class="destination">
+    The system will explain which rules were activated.
+  </div>
+
+  <h3>Hospital activity log</h3>
+  <div id="eventLog"></div>
+
+  <p class="note">
+    Educational simulation only. These simplified rules are not validated
+    medical guidance and must not be used to diagnose or manage real patients.
+    Actual emergencies require immediate assessment by qualified clinicians.
+  </p>
+</section>
+
+</div>
+
+
+<script>
+/* ==========================================================
+   HOSPITAL EXPERT SYSTEM SIMULATION
+   ========================================================== */
+
+const $ = id => document.getElementById(id);
+
+let ticketNumber = 1;
+let issued = 0;
+let screened = 0;
+let emergencyCases = 0;
+let autoTimer = null;
+let emergencyTimer = null;
+let countdownTimer = null;
+let emergencyLocked = false;
+let emergencySeconds = 20;
+let processing = false;
+let soundEnabled = false;
+let audioContext = null;
+let sirenOscillator = null;
+let sirenLfo = null;
+let sirenGain = null;
+let activeSirenTimeout = null;
+
+let queue = [];
+let allPatients = [];
+let staff = [];
+let patientEntities = {};
+let staffBusy = false;
+
+const destinations = {
+  EMERGENCY:{
+    name:"EMERGENCY UNIT",
+    message:"Proceed immediately to the emergency unit.",
+    position:"-6 0 -3.2",
+    color:"#b91c1c",
+    queuePosition:{x:-6,z:-3.2}
+  },
+  SEPARATE:{
+    name:"RESPIRATORY ASSESSMENT",
+    message:"Proceed to the respiratory assessment unit.",
+    position:"6 0 3",
+    color:"#ca8a04",
+    queuePosition:{x:6,z:3}
+  },
+  REVIEW:{
+    name:"CLINICAL REVIEW",
+    message:"Proceed to the clinical review area.",
+    position:"-6 0 3",
+    color:"#7c3aed",
+    queuePosition:{x:-6,z:3}
+  },
+  NORMAL:{
+    name:"GENERAL RECEPTION",
+    message:"Proceed to general reception.",
+    position:"6 0 -2.2",
+    color:"#0f766e",
+    queuePosition:{x:6,z:-2.2}
+  }
+};
+
+
+/* ==========================================================
+   AUDIO
+   ========================================================== */
+
+function enableSound(){
+  try{
+    audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+    audioContext.resume();
+    soundEnabled = true;
+    say("Hospital announcement system activated.");
+    tone(700,0.12);
+    logEvent("Audio and announcement system enabled.");
+  }catch(e){
+    alert("Audio is not supported by this browser.");
+  }
+}
+
+function muteSound(){
+  soundEnabled = false;
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  stopSiren();
+  logEvent("Hospital sound muted.");
+}
+
+function tone(frequency=500,duration=.15){
+  if(!soundEnabled || !audioContext) return;
+  try{
+    const osc=audioContext.createOscillator();
+    const gain=audioContext.createGain();
+    osc.frequency.value=frequency;
+    gain.gain.value=.08;
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+duration);
+    osc.stop(audioContext.currentTime+duration);
+  }catch(e){}
+}
+
+function say(message){
+  if(!soundEnabled || !window.speechSynthesis) return;
+  const utterance=new SpeechSynthesisUtterance(message);
+  utterance.rate=.94;
+  utterance.pitch=1;
+  utterance.volume=1;
+  window.speechSynthesis.speak(utterance);
+}
+
+function startSiren(){
+  if(!soundEnabled || !audioContext) return;
+  stopSiren();
+
+  try{
+    sirenOscillator=audioContext.createOscillator();
+    sirenLfo=audioContext.createOscillator();
+    sirenGain=audioContext.createGain();
+
+    const lfoGain=audioContext.createGain();
+
+    sirenOscillator.type="sawtooth";
+    sirenOscillator.frequency.value=650;
+    sirenGain.gain.value=.065;
+
+    sirenLfo.frequency.value=1.1;
+    lfoGain.gain.value=250;
+
+    sirenLfo.connect(lfoGain);
+    lfoGain.connect(sirenOscillator.frequency);
+
+    sirenOscillator.connect(sirenGain);
+    sirenGain.connect(audioContext.destination);
+
+    sirenOscillator.start();
+    sirenLfo.start();
+
+    activeSirenTimeout=setTimeout(stopSiren,7000);
+  }catch(e){
+    console.warn("Siren could not start",e);
+  }
+}
+
+function stopSiren(){
+  clearTimeout(activeSirenTimeout);
+  try{
+    if(sirenOscillator){sirenOscillator.stop();sirenOscillator.disconnect();}
+    if(sirenLfo){sirenLfo.stop();sirenLfo.disconnect();}
+    if(sirenGain)sirenGain.disconnect();
+  }catch(e){}
+  sirenOscillator=null;
+  sirenLfo=null;
+  sirenGain=null;
+}
+
+
+/* ==========================================================
+   SCENE BUILDING
+   ========================================================== */
+
+const scene=document.querySelector("a-scene");
+const patientLayer=$("patientLayer");
+const staffLayer=$("staffLayer");
+
+function entity(tag,attrs,parent){
+  const el=document.createElement(tag);
+  Object.entries(attrs||{}).forEach(([k,v])=>el.setAttribute(k,v));
+  parent.appendChild(el);
+  return el;
+}
+
+function makePerson(parent,id,position,uniformColor,kind="patient"){
+  const group=entity("a-entity",{id,position},parent);
+
+  entity("a-cylinder",{
+    position:"0 .85 0",
+    radius:".22",
+    height:".65",
+    color:uniformColor
+  },group);
+
+  entity("a-sphere",{
+    position:"0 1.38 0",
+    radius:".19",
+    color:"#c78e68"
+  },group);
+
+  entity("a-box",{
+    position:"-.13 .35 0",
+    width:".13",
+    height:".45",
+    depth:".14",
+    color:"#334155"
+  },group);
+
+  entity("a-box",{
+    position:".13 .35 0",
+    width:".13",
+    height:".45",
+    depth:".14",
+    color:"#334155"
+  },group);
+
+  entity("a-box",{
+    position:"-.27 .91 0",
+    width:".12",
+    height:".42",
+    depth:".12",
+    color:uniformColor,
+    rotation:"0 0 -15"
+  },group);
+
+  entity("a-box",{
+    position:".27 .91 0",
+    width:".12",
+    height:".42",
+    depth:".12",
+    color:uniformColor,
+    rotation:"0 0 15"
+  },group);
+
+  if(kind==="staff"){
+    entity("a-box",{
+      position:"0 1.0 .12",
+      width:".12",
+      height:".2",
+      depth:".02",
+      color:"#ffffff"
+    },group);
+  }
+  return group;
+}
+
+function createChairs(){
+  const layer=$("chairs");
+  for(let row=0;row<2;row++){
+    for(let col=0;col<5;col++){
+      const x=-4.3+col*2.1;
+      const z=2.5+row*2;
+      entity("a-box",{
+        position:`${x} .45 ${z}`,
+        width:"1.1",
+        height:".12",
+        depth:".55",
+        color:"#256b91"
+      },layer);
+      entity("a-box",{
+        position:`${x} .85 ${z+.23}`,
+        width:"1.1",
+        height:".7",
+        depth:".12",
+        color:"#256b91"
+      },layer);
+    }
+  }
+}
+
+function createStaff(){
+  const staffData=[
+    {id:"nurse1",name:"Nurse A",role:"Nurse",color:"#0891b2",pos:"-2 0 -1"},
+    {id:"nurse2",name:"Nurse B",role:"Nurse",color:"#0e7490",pos:"2 0 0"},
+    {id:"doctor1",name:"Doctor A",role:"Doctor",color:"#ffffff",pos:"1 0 -3.5"},
+    {id:"doctor2",name:"Doctor B",role:"Doctor",color:"#e2e8f0",pos:"4 0 -1"},
+    {id:"attendant1",name:"Attendant",role:"Attendant",color:"#a16207",pos:"-3 0 1"}
+  ];
+
+  staffData.forEach(s=>{
+    const p=makePerson(staffLayer,s.id,s.pos,s.color,"staff");
+    staff.push({...s,el:p});
+  });
+
+  staff.forEach((s,i)=>{
+    const points=[
+      [-2+i,0,-1],
+      [-1+i,0,1],
+      [1+i,0,-1],
+      [0+i,0,-2]
+    ];
+    let index=0;
+    setInterval(()=>{
+      if(emergencyLocked && (s.role==="Nurse"||s.role==="Doctor")) return;
+      if(staffBusy) return;
+      const p=points[index%points.length];
+      s.el.setAttribute("animation__walk",{
+        property:"position",
+        to:`${p[0]} 0 ${p[2]}`,
+        dur:2300,
+        easing:"easeInOutSine"
+      });
+      index++;
+    },3500+i*350);
+  });
+}
+
+function staffRespondToEmergency(){
+  staffBusy=true;
+  const responders=staff.filter(s=>s.role==="Nurse"||s.role==="Doctor");
+  responders.forEach((s,i)=>{
+    const x=-6+(i%2)*.9;
+    const z=-4+(i%2)*.7;
+    s.el.setAttribute("animation__emergency",{
+      property:"position",
+      to:`${x} 0 ${z}`,
+      dur:1800,
+      easing:"easeOutQuad"
+    });
+  });
+  logEvent("Medical team alerted and moving to the emergency unit.");
+}
+
+function staffReturnToNormal(){
+  staffBusy=false;
+  staff.forEach((s,i)=>{
+    const x=-2+(i%4)*1.2;
+    const z=-1+(i%3)*1.2;
+    s.el.setAttribute("animation__return",{
+      property:"position",
+      to:`${x} 0 ${z}`,
+      dur:1800,
+      easing:"easeInOutSine"
+    });
+  });
+}
+
+
+/* ==========================================================
+   PATIENT REGISTRATION
+   ========================================================== */
+
+function getSelectedSymptoms(){
+  return [...document.querySelectorAll(".checks input:checked")].map(x=>x.value);
+}
+
+function clearForm(){
+  $("patientName").value="";
+  document.querySelectorAll(".checks input").forEach(x=>x.checked=false);
+  $("exposure").value="no";
+  $("covidTest").value="unknown";
+}
+
+function registerPatient(){
+  if(emergencyLocked){
+    say("Ticket issuing is temporarily suspended due to an emergency. Please wait.");
+    logEvent("Ticket request blocked: emergency response in progress.");
+    return;
+  }
+
+  const symptoms=getSelectedSymptoms();
+  const name=$("patientName").value.trim() || "Walk-in Patient";
+  const patient={
+    name,
+    age:$("ageGroup").value,
+    symptoms,
+    exposure:$("exposure").value,
+    test:$("covidTest").value
+  };
+
+  issueTicket(patient);
+}
+
+function demoPatient(){
+  if(emergencyLocked){
+    say("New patient registration is temporarily suspended.");
+    return;
+  }
+
+  const examples=[
+    {name:"Mary Wanjiku",age:"Adult",symptoms:["fever","cough"],exposure:"no",test:"unknown"},
+    {name:"John Mwangi",age:"Older adult",symptoms:["chest pain","breathlessness"],exposure:"no",test:"unknown"},
+    {name:"Peter Kamau",age:"Adult",symptoms:["cough","fever","loss of taste"],exposure:"yes",test:"unknown"},
+    {name:"Grace Njeri",age:"Adult",symptoms:["no symptoms"],exposure:"no",test:"unknown"},
+    {name:"Brian Otieno",age:"Child",symptoms:["sore throat","fever"],exposure:"no",test:"unknown"},
+    {name:"Anne Muthoni",age:"Adult",symptoms:["vomiting","diarrhoea"],exposure:"no",test:"unknown"},
+    {name:"David Maina",age:"Older adult",symptoms:["confusion"],exposure:"no",test:"unknown"}
+  ];
+
+  const p=examples[Math.floor(Math.random()*examples.length)];
+  issueTicket(p);
+}
+
+function issueTicket(patient){
+  if(emergencyLocked) return;
+
+  const id="A"+String(ticketNumber++).padStart(3,"0");
+  const p={
+    ...patient,
+    id,
+    status:"WAITING",
+    createdAt:Date.now(),
+    priority:0
+  };
+
+  issued++;
+  queue.push(p);
+  allPatients.push(p);
+
+  $("currentTicket").textContent=id;
+  $("ticketMessage").textContent=`${patient.name} registered. Please wait for your ticket to be called.`;
+
+  updateMetrics();
+  updateQueue();
+  addPatientToScene(p);
+
+  logEvent(`${id} issued to ${patient.name}. Patient directed to the waiting area.`);
+  tone(600,.15);
+  say(`Ticket ${id} issued. ${patient.name}, please wait in the waiting area until your ticket is called.`);
+
+  updateWaitingPositions();
+  processNext();
+}
+
+
+/* ==========================================================
+   PATIENTS IN THE 3D SCENE
+   ========================================================== */
+
+const clothing=["#2563eb","#9333ea","#0f766e","#b45309","#be123c","#475569"];
+
+function addPatientToScene(p){
+  const index=queue.length-1;
+  const x=-4.3+(index%5)*2.1;
+  const z=3.0+Math.floor(index/5)*1.0;
+
+  const el=makePerson(
+    patientLayer,
+    "patient_"+p.id,
+    `${x} 0 ${z}`,
+    clothing[Math.floor(Math.random()*clothing.length)]
+  );
+
+  patientEntities[p.id]=el;
+
+  el.setAttribute("animation__arrive",{
+    property:"position",
+    from:"-9 0 6",
+    to:`${x} 0 ${z}`,
+    dur:2200,
+    easing:"easeOutQuad"
+  });
+
+  const ticketLabel=entity("a-text",{
+    value:p.id,
+    position:"0 1.8 0",
+    align:"center",
+    color:"#123c60",
+    width:"3"
+  },el);
+}
+
+function updateWaitingPositions(){
+  queue.forEach((p,i)=>{
+    const el=patientEntities[p.id];
+    if(!el) return;
+    const x=-4.3+(i%5)*2.1;
+    const z=3.0+Math.floor(i/5)*1.0;
+    el.setAttribute("animation__queue",{
+      property:"position",
+      to:`${x} 0 ${z}`,
+      dur:800,
+      easing:"easeInOutQuad"
+    });
+  });
+}
+
+function movePatientToDestination(p,decision){
+  const el=patientEntities[p.id];
+  if(!el) return;
+
+  const pos=destinations[decision].queuePosition;
+  el.setAttribute("animation__destination",{
+    property:"position",
+    to:`${pos.x} 0 ${pos.z}`,
+    dur:3000,
+    easing:"easeInOutQuad"
+  });
+
+  setTimeout(()=>{
+    if(el && el.parentNode) el.parentNode.removeChild(el);
+    delete patientEntities[p.id];
+  },11000);
+}
+
+
+/* ==========================================================
+   EXPERT SYSTEM: KNOWLEDGE BASE AND INFERENCE ENGINE
+   ========================================================== */
+
+function evaluatePatient(p){
+  const s=p.symptoms;
+  const rules=[];
+
+  const emergencySymptoms=["chest pain","breathlessness","confusion","blue lips"];
+  const hasEmergency=emergencySymptoms.some(x=>s.includes(x));
+
+  const respiratorySymptoms=["cough","fever","sore throat","breathlessness"];
+  const hasRespiratory=respiratorySymptoms.some(x=>s.includes(x));
+
+  const tasteSmell=s.includes("loss of taste")||s.includes("loss of smell");
+
+  if(hasEmergency){
+    rules.push("R1: Emergency warning sign detected.");
+    return {
+      decision:"EMERGENCY",
+      rules,
+      reason:"A reported emergency warning sign requires immediate human clinical assessment."
+    };
+  }
+
+  if(p.test==="positive"){
+    rules.push("R2: Positive COVID-19 test.");
+    return {
+      decision:"SEPARATE",
+      rules,
+      reason:"A positive test result triggers respiratory assessment and infection-control review."
+    };
+  }
+
+  if(p.exposure==="yes" && hasRespiratory){
+    rules.push("R3: Recent exposure combined with respiratory symptoms.");
+    return {
+      decision:"SEPARATE",
+      rules,
+      reason:"Recent exposure and respiratory symptoms trigger respiratory assessment."
+    };
+  }
+
+  if(tasteSmell && hasRespiratory){
+    rules.push("R4: Loss of taste or smell with respiratory symptoms.");
+    return {
+      decision:"SEPARATE",
+      rules,
+      reason:"The symptom combination triggers respiratory assessment."
+    };
+  }
+
+  if(s.includes("fever")||s.includes("cough")||s.includes("sore throat")){
+    rules.push("R5: General symptoms requiring review.");
+    return {
+      decision:"REVIEW",
+      rules,
+      reason:"Symptoms require further review by a qualified clinician."
+    };
+  }
+
+  if(s.includes("no symptoms") || s.length===0){
+    rules.push("R6: No reported symptoms.");
+    return {
+      decision:"NORMAL",
+      rules,
+      reason:"No symptoms were reported; the patient is directed to general reception."
+    };
+  }
+
+  if(s.includes("vomiting")||s.includes("diarrhoea")||s.includes("headache")||s.includes("fatigue")){
+    rules.push("R7: Other symptoms requiring clinical review.");
+    return {
+      decision:"REVIEW",
+      rules,
+      reason:"Other symptoms require assessment by clinical staff."
+    };
+  }
+
+  rules.push("R8: Insufficient information.");
+  return {
+    decision:"REVIEW",
+    rules,
+    reason:"The system does not have enough information to recommend routine reception."
+  };
+}
+
+
+/* ==========================================================
+   INFERENCE ENGINE / QUEUE PROCESSING
+   ========================================================== */
+
+async function processNext(){
+  if(processing || emergencyLocked || queue.length===0) return;
+
+  processing=true;
+
+  const p=queue.shift();
+  updateQueue();
+  updateWaitingPositions();
+
+  p.status="SCREENING";
+
+  logEvent(`${p.id} called for screening.`);
+  say(`Ticket ${p.id}, please proceed to the screening desk.`);
+
+  const el=patientEntities[p.id];
+
+  if(el){
+    el.setAttribute("animation__screen",{
+      property:"position",
+      to:"0 0 -0.5",
+      dur:2200,
+      easing:"easeInOutQuad"
+    });
+  }
+
+  $("workingMemory").innerHTML=`
+    <b>Patient:</b> ${escapeHTML(p.name)}<br>
+    <b>Ticket:</b> ${p.id}<br>
+    <b>Age group:</b> ${escapeHTML(p.age)}<br>
+    <b>Symptoms:</b> ${p.symptoms.length?p.symptoms.map(escapeHTML).join(", "):"None reported"}<br>
+    <b>Exposure:</b> ${p.exposure}<br>
+    <b>Test:</b> ${p.test}
+  `;
+
+  await wait(3000);
+
+  if(emergencyLocked){
+    processing=false;
+    return;
+  }
+
+  const result=evaluatePatient(p);
+  const decision=result.decision;
+
+  p.status="ASSESSED";
+  p.decision=decision;
+  p.rules=result.rules;
+
+  screened++;
+
+  if(decision==="EMERGENCY"){
+    emergencyCases++;
+    activateEmergency(p,result);
+    processing=false;
+    updateMetrics();
+    return;
+  }
+
+  routePatient(p,result);
+  updateMetrics();
+
+  processing=false;
+
+  setTimeout(()=>{
+    processNext();
+  },1800);
+}
+
+function wait(ms){
+  return new Promise(resolve=>setTimeout(resolve,ms));
+}
+
+
+/* ==========================================================
+   ROUTING AND ANNOUNCEMENTS
+   ========================================================== */
+
+function routePatient(p,result){
+  const decision=result.decision;
+  const destination=destinations[decision];
+
+  p.destination=destination.name;
+
+  const decisionColor=decision==="SEPARATE"?"orange":
+    decision==="REVIEW"?"blue":"green";
+
+  $("decisionBox").innerHTML=`
+    <b>${escapeHTML(p.id)} — ${escapeHTML(decision)}</b><br>
+    Patient: ${escapeHTML(p.name)}<br>
+    Destination: <b>${destination.name}</b><br>
+    <span class="tag ${decisionColor}">${destination.name}</span><br><br>
+    ${escapeHTML(result.reason)}
+  `;
+
+  $("destinationPanel").className="destination";
+  $("destinationPanel").innerHTML=`
+    <b>Ticket ${escapeHTML(p.id)} — ${escapeHTML(p.name)}</b><br>
+    Expert system decision: <b>${decision}</b><br>
+    <b>Destination: ${destination.name}</b><br>
+    ${destination.message}
+  `;
+
+  $("sceneDestination").setAttribute(
+    "value",
+    `${p.id}: ${destination.name}`
+  );
+
+  $("explanation").innerHTML=`
+    <b>Activated rule(s):</b><br>
+    ${result.rules.map(escapeHTML).join("<br>")}<br><br>
+    <b>Inference:</b> ${escapeHTML(result.reason)}<br>
+    <b>Action:</b> Route patient to ${destination.name}.
+  `;
+
+  logEvent(`${p.id} assessed. Decision: ${decision}. Destination: ${destination.name}.`);
+
+  say(`Ticket ${p.id}. Assessment completed. You are going to ${destination.name}. ${destination.message}`);
+
+  movePatientToDestination(p,decision);
+}
+
+
+/* ==========================================================
+   EMERGENCY RESPONSE AND TEMPORARY SUSPENSION
+   ========================================================== */
+
+function activateEmergency(p,result){
+  emergencyLocked=true;
+  emergencySeconds=20;
+
+  p.destination=destinations.EMERGENCY.name;
+
+  $("emergencyBanner").style.display="block";
+  $("headerStatus").textContent="EMERGENCY RESPONSE";
+  $("headerStatus").style.background="#b91c1c";
+
+  $("systemStatus").className="locked";
+  $("systemStatus").textContent="EMERGENCY LOCKDOWN — New tickets suspended";
+
+  $("issueBtn").disabled=true;
+
+  $("decisionBox").innerHTML=`
+    <b style="color:#b91c1c">🚨 EMERGENCY DETECTED</b><br>
+    Ticket: ${escapeHTML(p.id)}<br>
+    Patient: ${escapeHTML(p.name)}<br>
+    Destination: <b>EMERGENCY UNIT</b><br>
+    ${escapeHTML(result.reason)}
+  `;
+
+  $("destinationPanel").className="destination emergency";
+  $("destinationPanel").innerHTML=`
+    <b>🚨 EMERGENCY ROUTING</b><br>
+    Ticket ${escapeHTML(p.id)} — ${escapeHTML(p.name)}<br>
+    <b>Destination: EMERGENCY UNIT</b><br>
+    Immediate medical attention required.
+  `;
+
+  $("sceneDestination").setAttribute(
+    "value",
+    `EMERGENCY: ${p.id} — EMERGENCY UNIT`
+  );
+
+  $("explanation").innerHTML=`
+    <b>Emergency rule activated:</b><br>
+    ${result.rules.map(escapeHTML).join("<br>")}<br><br>
+    <b>Inference:</b> ${escapeHTML(result.reason)}<br><br>
+    <b>System action:</b> Emergency priority. Suspend ticket issuance and routine screening. Alert medical staff.
+  `;
+
+  logEvent(`🚨 EMERGENCY: ${p.id} — ${p.name}. New ticket issuance and routine screening suspended.`);
+  logEvent("Emergency siren activated. Medical team responding.");
+
+  say(`Emergency alert. Ticket ${p.id}. Patient requires immediate attention. Proceeding to the emergency unit. All routine ticketing is temporarily suspended. Medical team to the emergency unit immediately.`);
+
+  startSiren();
+  staffRespondToEmergency();
+
+  movePatientToDestination(p,"EMERGENCY");
+
+  updateMetrics();
+  updateQueue();
+
+  // Countdown shown to users
+  $("emergencyCountdown").textContent=`${emergencySeconds} seconds remaining`;
+
+  countdownTimer=setInterval(()=>{
+    if(!emergencyLocked) return;
+    emergencySeconds--;
+    $("emergencyCountdown").textContent=
+      `${Math.max(0,emergencySeconds)} seconds remaining`;
+
+    if(emergencySeconds<=0){
+      clearInterval(countdownTimer);
+      resolveEmergency("The emergency response period has ended.");
+    }
+  },1000);
+}
+
+function resolveEmergency(message="Emergency response cleared."){
+  if(!emergencyLocked) return;
+
+  emergencyLocked=false;
+
+  clearInterval(countdownTimer);
+  clearTimeout(emergencyTimer);
+  stopSiren();
+
+  $("emergencyBanner").style.display="none";
+  $("headerStatus").textContent="HOSPITAL OPERATIONAL";
+  $("headerStatus").style.background="#16845b";
+
+  $("systemStatus").className="";
+  $("systemStatus").textContent="System operational — accepting patients";
+
+  $("issueBtn").disabled=false;
+
+  staffReturnToNormal();
+
+  logEvent(message+" Normal ticketing and screening resumed.");
+
+  say("Emergency response period completed. Normal hospital operations have resumed. New tickets may now be issued.");
+
+  $("sceneDestination").setAttribute(
+    "value",
+    "HOSPITAL OPERATIONS RESUMED"
+  );
+
+  processing=false;
+
+  setTimeout(processNext,1000);
+}
+
+
+/* ==========================================================
+   AUTOMATIC PATIENT ARRIVALS
+   ========================================================== */
+
+function startAuto(){
+  if(autoTimer) return;
+
+  logEvent("Automatic patient arrivals started.");
+  say("Automatic patient arrivals started.");
+
+  autoTimer=setInterval(()=>{
+    // Do not issue or create new tickets during emergency lockdown.
+    if(emergencyLocked) return;
+
+    demoPatient();
+  },4500);
+}
+
+function stopAuto(){
+  clearInterval(autoTimer);
+  autoTimer=null;
+  logEvent("Automatic patient arrivals paused.");
+  say("Automatic patient arrivals paused.");
+}
+
+
+/* ==========================================================
+   DASHBOARD, QUEUE AND EVENT LOG
+   ========================================================== */
+
+function updateMetrics(){
+  $("issuedCount").textContent=issued;
+  $("screenedCount").textContent=screened;
+  $("waitingCount").textContent=queue.length;
+  $("emergencyCount").textContent=emergencyCases;
+}
+
+function updateQueue(){
+  if(queue.length===0){
+    $("queueList").innerHTML="No patients waiting.";
+    return;
+  }
+
+  $("queueList").innerHTML=queue.map(p=>`
+    <div class="queue-item">
+      <b>${escapeHTML(p.id)}</b> — ${escapeHTML(p.name)}
+      <span class="tag blue">WAITING</span>
+    </div>
+  `).join("");
+}
+
+function logEvent(message){
+  const log=$("eventLog");
+  const item=document.createElement("div");
+  item.className="log-item";
+
+  const time=new Date().toLocaleTimeString();
+  item.textContent=`${time} — ${message}`;
+
+  log.prepend(item);
+
+  while(log.children.length>35){
+    log.removeChild(log.lastChild);
+  }
+}
+
+function escapeHTML(value){
+  return String(value).replace(/[&<>"']/g,char=>({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  })[char]);
+}
+
+
+/* ==========================================================
+   RESET
+   ========================================================== */
+
+function resetSystem(){
+  stopAuto();
+  stopSiren();
+
+  clearInterval(countdownTimer);
+  clearTimeout(emergencyTimer);
+
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+
+  emergencyLocked=false;
+  processing=false;
+  staffBusy=false;
+  queue=[];
+  allPatients=[];
+  ticketNumber=1;
+  issued=0;
+  screened=0;
+  emergencyCases=0;
+
+  Object.values(patientEntities).forEach(el=>{
+    if(el && el.parentNode) el.parentNode.removeChild(el);
+  });
+
+  patientEntities={};
+
+  $("emergencyBanner").style.display="none";
+  $("headerStatus").textContent="HOSPITAL OPERATIONAL";
+  $("headerStatus").style.background="#16845b";
+
+  $("systemStatus").className="";
+  $("systemStatus").textContent="System operational — accepting patients";
+
+  $("issueBtn").disabled=false;
+
+  $("currentTicket").textContent="---";
+  $("ticketMessage").textContent="No ticket issued yet.";
+
+  $("decisionBox").textContent="Waiting for patient assessment.";
+  $("destinationPanel").textContent="No patient has been assessed yet.";
+  $("workingMemory").textContent="No patient facts loaded.";
+  $("explanation").textContent="The system will explain which rules were activated.";
+  $("sceneDestination").setAttribute("value","PATIENT DESTINATION: AWAITING ASSESSMENT");
+  $("eventLog").innerHTML="";
+
+  staffReturnToNormal();
+  updateMetrics();
+  updateQueue();
+
+  logEvent("Simulation reset. Hospital ready for new patients.");
+}
+
+
+/* ==========================================================
+   INITIALISE
+   ========================================================== */
+
+createChairs();
+createStaff();
+
+updateMetrics();
+updateQueue();
+
+logEvent("Hospital simulation initialised.");
+logEvent("Ticket kiosk ready. Expert system knowledge base loaded.");
+logEvent("Medical staff are on duty.");
+
+say("Welcome to the hospital. Please register at the ticket kiosk.");
+
+</script>
+
+</body>
+</html>
