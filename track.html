@@ -1,0 +1,827 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Road-Based Delivery Route Simulation</title>
+<script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#101827;color:white}
+#panel{
+ position:absolute;top:12px;left:12px;z-index:10;
+ width:310px;background:rgba(12,22,38,.94);
+ border:1px solid #52657c;border-radius:10px;padding:14px;
+ box-shadow:0 5px 20px #0008
+}
+h2{font-size:19px;margin:0 0 8px;color:#66d9ff}
+p{font-size:13px;line-height:1.5;margin:5px 0}
+button{
+ border:0;border-radius:5px;padding:9px 12px;margin:4px 2px;
+ background:#1686c9;color:white;font-weight:bold;cursor:pointer
+}
+button:hover{background:#08669f}
+button.secondary{background:#48566b}
+button.green{background:#15965c}
+button.red{background:#b43b3b}
+#status{color:#7dffb1;font-weight:bold;margin-top:9px}
+#routeInfo{font-size:12px;color:#d4e6f7;line-height:1.6}
+#help{position:absolute;bottom:12px;left:12px;z-index:10;
+ background:#101827dd;padding:10px;border-radius:8px;font-size:12px;line-height:1.6}
+#rightPanel{position:absolute;right:12px;top:12px;z-index:10;
+ background:#101827dd;padding:10px;border-radius:8px;font-size:12px}
+#rightPanel button{display:block;width:100%;margin:5px 0}
+</style>
+</head>
+
+<body>
+
+<div id="panel">
+<h2>3D Delivery Route System</h2>
+<p>Automatic delivery truck navigation using a connected road network.</p>
+
+<button class="green" onclick="startDelivery()">Start Delivery</button>
+<button class="red" onclick="stopDelivery()">Stop</button>
+<button onclick="resetSimulation()">Reset</button>
+
+<p><b>Delivery progress</b></p>
+<div id="status">Ready at the depot</div>
+<div id="routeInfo"></div>
+
+<hr style="border-color:#40536b">
+<p><b>Navigation mode</b></p>
+<button onclick="setCamera('follow')">Follow Truck</button>
+<button onclick="setCamera('top')">Top View</button>
+<button onclick="setCamera('overview')">Overview</button>
+
+<p><b>Sound</b></p>
+<button class="secondary" onclick="toggleSound()" id="soundButton">Sound: ON</button>
+</div>
+
+<div id="rightPanel">
+<b>Simulation controls</b>
+<button onclick="setSpeed(0.5)">Slow</button>
+<button onclick="setSpeed(1)">Normal</button>
+<button onclick="setSpeed(2)">Fast</button>
+<button onclick="setSpeed(3)">Very Fast</button>
+</div>
+
+<div id="help">
+<b>Road navigation:</b><br>
+The truck follows the marked roads and turns at road intersections.<br>
+W / S: Increase or decrease speed<br>
+Space: Stop / resume<br>
+Mouse: Look around<br>
+Use the camera buttons to change the view.
+</div>
+
+<a-scene
+ background="color:#91b9d2"
+ renderer="antialias:true; colorManagement:true"
+ shadow="type:pcfsoft">
+
+<a-assets>
+</a-assets>
+
+<!-- Lighting -->
+<a-light type="ambient" intensity="0.85"></a-light>
+<a-light type="directional" position="-20 35 15" intensity="1.1"
+ castShadow="true"></a-light>
+
+<!-- Ground -->
+<a-plane rotation="-90 0 0" width="100" height="100"
+ color="#6b9a58" position="0 -0.06 0"></a-plane>
+
+<!-- Road network -->
+<a-entity id="roads"></a-entity>
+<a-entity id="buildings"></a-entity>
+<a-entity id="markings"></a-entity>
+<a-entity id="routeDisplay"></a-entity>
+<a-entity id="deliveryMarkers"></a-entity>
+
+<!-- Depot -->
+<a-box position="-24 0.35 0" width="5" height="0.7" depth="5"
+ color="#245c9c"></a-box>
+<a-box position="-24 0.75 0" width="3.8" height="0.15" depth="3.8"
+ color="#4a9ee7"></a-box>
+<a-text value="DEPOT" position="-24 2.1 0" align="center"
+ color="#ffffff" width="8" rotation="-90 0 0"></a-text>
+
+<!-- Truck -->
+<a-entity id="truck" position="-24 0 0" rotation="0 0 0">
+
+ <!-- Shadow -->
+ <a-box position="0 0.12 0" width="2.5" height="0.1" depth="4.3"
+ color="#333333" opacity="0.3"></a-box>
+
+ <!-- Cargo container -->
+ <a-box position="0 1.25 0.45" width="2.05" height="1.65"
+ depth="2.55" color="#e3a323"></a-box>
+
+ <!-- Cargo top -->
+ <a-box position="0 2.1 0.45" width="2.08" height="0.08"
+ depth="2.58" color="#f5c34b"></a-box>
+
+ <!-- Cab -->
+ <a-box position="0 1.1 -1.25" width="1.95" height="1.55"
+ depth="1.25" color="#1676bd"></a-box>
+
+ <!-- Windscreen -->
+ <a-box position="0 1.45 -1.89" width="1.55" height="0.65"
+ depth="0.035" color="#b8e7f5"></a-box>
+
+ <!-- Side windows -->
+ <a-box position="-0.99 1.47 -1.25" width="0.035"
+ height="0.65" depth="0.75" color="#b8e7f5"></a-box>
+ <a-box position="0.99 1.47 -1.25" width="0.035"
+ height="0.65" depth="0.75" color="#b8e7f5"></a-box>
+
+ <!-- Bumper -->
+ <a-box position="0 0.55 -1.96" width="2.05" height="0.22"
+ depth="0.18" color="#333333"></a-box>
+
+ <!-- Headlights -->
+ <a-box position="-0.65 0.8 -2.06" width="0.35"
+ height="0.22" depth="0.08" color="#fff4a8"></a-box>
+ <a-box position="0.65 0.8 -2.06" width="0.35"
+ height="0.22" depth="0.08" color="#fff4a8"></a-box>
+
+ <!-- Rear lights -->
+ <a-box position="-0.75 0.8 1.78" width="0.25"
+ height="0.3" depth="0.08" color="#ff2525"></a-box>
+ <a-box position="0.75 0.8 1.78" width="0.25"
+ height="0.3" depth="0.08" color="#ff2525"></a-box>
+
+ <!-- Wheels -->
+ <a-cylinder position="-1.08 0.45 -1.25" rotation="0 0 90"
+ radius="0.43" height="0.22" color="#151515"></a-cylinder>
+ <a-cylinder position="1.08 0.45 -1.25" rotation="0 0 90"
+ radius="0.43" height="0.22" color="#151515"></a-cylinder>
+ <a-cylinder position="-1.08 0.45 1.15" rotation="0 0 90"
+ radius="0.43" height="0.22" color="#151515"></a-cylinder>
+ <a-cylinder position="1.08 0.45 1.15" rotation="0 0 90"
+ radius="0.43" height="0.22" color="#151515"></a-cylinder>
+
+ <!-- Wheel hubs -->
+ <a-cylinder position="-1.2 0.45 -1.25" rotation="0 0 90"
+ radius="0.18" height="0.03" color="#aaaaaa"></a-cylinder>
+ <a-cylinder position="1.2 0.45 -1.25" rotation="0 0 90"
+ radius="0.18" height="0.03" color="#aaaaaa"></a-cylinder>
+ <a-cylinder position="-1.2 0.45 1.15" rotation="0 0 90"
+ radius="0.18" height="0.03" color="#aaaaaa"></a-cylinder>
+ <a-cylinder position="1.2 0.45 1.15" rotation="0 0 90"
+ radius="0.18" height="0.03" color="#aaaaaa"></a-cylinder>
+
+ <a-text value="DELIVERY" position="0 1.25 1.76"
+ align="center" color="#222222" rotation="0 180 0"
+ width="2.5"></a-text>
+</a-entity>
+
+<!-- Camera -->
+<a-entity id="cameraRig" position="0 0 0">
+ <a-camera id="camera" position="0 7 12"
+  rotation="-25 0 0" look-controls wasd-controls-enabled="false">
+ </a-camera>
+</a-entity>
+
+</a-scene>
+
+<script>
+/* =====================================================
+   ROAD NETWORK
+   The truck is only allowed to travel along these roads.
+   ===================================================== */
+
+const roadPositions = [-24,-12,0,12,24];
+const roads = document.getElementById("roads");
+const markings = document.getElementById("markings");
+const buildings = document.getElementById("buildings");
+const routeDisplay = document.getElementById("routeDisplay");
+const deliveryMarkers = document.getElementById("deliveryMarkers");
+
+const roadWidth = 5.5;
+const roadLength = 52;
+
+// Horizontal and vertical road strips
+roadPositions.forEach(z=>{
+ const road=document.createElement("a-box");
+ road.setAttribute("position",`0 0.015 ${z}`);
+ road.setAttribute("width",roadLength);
+ road.setAttribute("height","0.08");
+ road.setAttribute("depth",roadWidth);
+ road.setAttribute("color","#343b43");
+ roads.appendChild(road);
+});
+
+roadPositions.forEach(x=>{
+ const road=document.createElement("a-box");
+ road.setAttribute("position",`${x} 0.02 0`);
+ road.setAttribute("width",roadWidth);
+ road.setAttribute("height","0.09");
+ road.setAttribute("depth",roadLength);
+ road.setAttribute("color","#343b43");
+ roads.appendChild(road);
+});
+
+// Dashed centre lines along roads
+roadPositions.forEach(z=>{
+ for(let x=-24;x<=24;x+=4){
+  const line=document.createElement("a-box");
+  line.setAttribute("position",`${x} 0.075 ${z}`);
+  line.setAttribute("width","2");
+  line.setAttribute("height","0.025");
+  line.setAttribute("depth","0.12");
+  line.setAttribute("color","#f5e7a0");
+  markings.appendChild(line);
+ }
+});
+
+roadPositions.forEach(x=>{
+ for(let z=-24;z<=24;z+=4){
+  const line=document.createElement("a-box");
+  line.setAttribute("position",`${x} 0.08 ${z}`);
+  line.setAttribute("width","0.12");
+  line.setAttribute("height","0.025");
+  line.setAttribute("depth","2");
+  line.setAttribute("color","#f5e7a0");
+  markings.appendChild(line);
+ }
+});
+
+// Buildings placed in the blocks between roads
+const buildingColors=[
+ "#c5b59c","#d5d0c4","#b7c8b2","#c6b0a0",
+ "#b5bdc9","#d8c5a3","#b4c5c9"
+];
+
+let colorIndex=0;
+
+for(let row=0;row<4;row++){
+ for(let col=0;col<4;col++){
+
+  const x=-18+col*12;
+  const z=-18+row*12;
+
+  // Leave some space around the buildings.
+  const width=5.0;
+  const depth=5.0;
+  const height=2.5+Math.random()*3.5;
+
+  const building=document.createElement("a-box");
+  building.setAttribute("position",
+   `${x} ${height/2} ${z}`);
+  building.setAttribute("width",width);
+  building.setAttribute("height",height);
+  building.setAttribute("depth",depth);
+  building.setAttribute("color",
+   buildingColors[colorIndex%buildingColors.length]);
+  buildings.appendChild(building);
+
+  // Roof
+  const roof=document.createElement("a-box");
+  roof.setAttribute("position",`${x} ${height+0.08} ${z}`);
+  roof.setAttribute("width",width+0.2);
+  roof.setAttribute("height","0.16");
+  roof.setAttribute("depth",depth+0.2);
+  roof.setAttribute("color","#565b61");
+  buildings.appendChild(roof);
+
+  colorIndex++;
+ }
+}
+
+/* =====================================================
+   GRAPH: 25 ROAD JUNCTIONS
+   Every node connects only to adjacent road junctions.
+   ===================================================== */
+
+const nodes=[];
+
+for(let r=0;r<5;r++){
+ for(let c=0;c<5;c++){
+  nodes.push({
+   id:r*5+c,
+   x:roadPositions[c],
+   z:roadPositions[r],
+   row:r,
+   col:c
+  });
+ }
+}
+
+function neighbours(id){
+ const n=nodes[id];
+ const result=[];
+
+ if(n.row>0) result.push(id-5);
+ if(n.row<4) result.push(id+5);
+ if(n.col>0) result.push(id-1);
+ if(n.col<4) result.push(id+1);
+
+ return result;
+}
+
+// Shortest path through the road network using Dijkstra
+function shortestPath(start,end){
+ const distance={};
+ const previous={};
+ const unvisited=new Set(nodes.map(n=>n.id));
+
+ nodes.forEach(n=>distance[n.id]=Infinity);
+ distance[start]=0;
+
+ while(unvisited.size){
+  let current=null;
+  let best=Infinity;
+
+  for(const id of unvisited){
+   if(distance[id]<best){
+    best=distance[id];
+    current=id;
+   }
+  }
+
+  if(current===null || best===Infinity) break;
+  if(current===end) break;
+
+  unvisited.delete(current);
+
+  neighbours(current).forEach(next=>{
+   const candidate=distance[current]+12;
+   if(candidate<distance[next]){
+    distance[next]=candidate;
+    previous[next]=current;
+   }
+  });
+ }
+
+ const path=[];
+ let current=end;
+
+ while(current!==undefined){
+  path.unshift(current);
+  if(current===start) break;
+  current=previous[current];
+ }
+
+ return path;
+}
+
+/* =====================================================
+   DELIVERY LOCATIONS
+   All delivery locations are road junctions.
+   Depot is node 10: (-24, 0).
+   ===================================================== */
+
+const depot=10;
+
+const deliveries=[
+ {node:2,name:"Customer A"},
+ {node:4,name:"Customer B"},
+ {node:22,name:"Customer C"},
+ {node:20,name:"Customer D"},
+ {node:14,name:"Customer E"}
+];
+
+// Show customer markers
+deliveries.forEach((d,i)=>{
+ const n=nodes[d.node];
+
+ const marker=document.createElement("a-cylinder");
+ marker.setAttribute("position",`${n.x} 0.35 ${n.z}`);
+ marker.setAttribute("radius","0.65");
+ marker.setAttribute("height","0.5");
+ marker.setAttribute("color","#ffbd28");
+ deliveryMarkers.appendChild(marker);
+
+ const label=document.createElement("a-text");
+ label.setAttribute("value",d.name);
+ label.setAttribute("position",`${n.x} 1.5 ${n.z}`);
+ label.setAttribute("align","center");
+ label.setAttribute("color","#ffffff");
+ label.setAttribute("width","7");
+ deliveryMarkers.appendChild(label);
+});
+
+// Delivery markers are on road intersections.
+// Draw a small depot marker
+const depotLabel=document.createElement("a-text");
+depotLabel.setAttribute("value","START / DEPOT");
+depotLabel.setAttribute("position","-24 2.3 0");
+depotLabel.setAttribute("align","center");
+depotLabel.setAttribute("color","#ffffff");
+depotLabel.setAttribute("width","8");
+deliveryMarkers.appendChild(depotLabel);
+
+/* =====================================================
+   ROUTE OPTIMISATION
+   Nearest-neighbour ordering followed by 2-opt improvement.
+   ===================================================== */
+
+function pathDistance(a,b){
+ return shortestPath(a,b).length-1;
+}
+
+function routeLength(order){
+ let total=0;
+ let current=depot;
+
+ order.forEach(id=>{
+  total+=pathDistance(current,id);
+  current=id;
+ });
+
+ total+=pathDistance(current,depot);
+ return total;
+}
+
+function optimiseRoute(){
+ let remaining=deliveries.map(d=>d.node);
+ let order=[];
+ let current=depot;
+
+ // Nearest neighbour
+ while(remaining.length){
+  let best=remaining[0];
+  let bestDistance=Infinity;
+
+  remaining.forEach(id=>{
+   const d=pathDistance(current,id);
+   if(d<bestDistance){
+    bestDistance=d;
+    best=id;
+   }
+  });
+
+  order.push(best);
+  remaining=remaining.filter(id=>id!==best);
+  current=best;
+ }
+
+ // 2-opt improvement
+ let improved=true;
+
+ while(improved){
+  improved=false;
+
+  for(let i=0;i<order.length-1;i++){
+   for(let j=i+1;j<order.length;j++){
+    const candidate=order.slice();
+    const reversed=candidate.slice(i,j+1).reverse();
+    candidate.splice(i,j-i+1,...reversed);
+
+    if(routeLength(candidate)<routeLength(order)){
+     order=candidate;
+     improved=true;
+    }
+   }
+  }
+ }
+
+ return order;
+}
+
+let deliveryOrder=optimiseRoute();
+
+/* =====================================================
+   BUILD COMPLETE ROAD-BY-ROAD JOURNEY
+   ===================================================== */
+
+function buildFullRoute(){
+ let full=[];
+ let current=depot;
+
+ deliveryOrder.forEach(target=>{
+  const segment=shortestPath(current,target);
+  full.push(...segment.slice(1));
+  current=target;
+ });
+
+ const returnSegment=shortestPath(current,depot);
+ full.push(...returnSegment.slice(1));
+
+ return full;
+}
+
+let fullRoute=buildFullRoute();
+
+// Draw the route as small green road markers
+function drawRoute(){
+ routeDisplay.innerHTML="";
+
+ fullRoute.forEach((id,i)=>{
+  const n=nodes[id];
+
+  const dot=document.createElement("a-sphere");
+  dot.setAttribute("position",`${n.x} 0.19 ${n.z}`);
+  dot.setAttribute("radius","0.22");
+  dot.setAttribute("color","#24f080");
+  routeDisplay.appendChild(dot);
+ });
+}
+
+drawRoute();
+
+/* =====================================================
+   TRUCK MOVEMENT
+   Movement is interpolated between adjacent graph nodes.
+   No straight-line shortcuts between delivery locations.
+   ===================================================== */
+
+const truck=document.getElementById("truck");
+
+let routeIndex=0;
+let progress=0;
+let running=false;
+let speed=1;
+let lastTime=0;
+let currentPosition={x:-24,z:0};
+let soundEnabled=true;
+
+const statusEl=document.getElementById("status");
+const routeInfo=document.getElementById("routeInfo");
+
+function updateRouteInfo(){
+ const names=deliveryOrder.map(id=>{
+  const d=deliveries.find(x=>x.node===id);
+  return d?d.name:"";
+ });
+
+ routeInfo.innerHTML=
+  "Optimised delivery order:<br>"+
+  names.map((name,i)=>(i+1)+". "+name).join("<br>")+
+  "<br><br>Road distance: "+routeLength(deliveryOrder)*12+
+  " metres (illustrative)";
+}
+
+updateRouteInfo();
+
+function setTruckDirection(dx,dz){
+ // Truck's front faces local negative Z.
+ const yaw=Math.atan2(-dx,-dz)*180/Math.PI;
+ truck.object3D.rotation.y=yaw*Math.PI/180;
+}
+
+function moveTruck(dt){
+ if(!running) return;
+
+ if(routeIndex>=fullRoute.length){
+  running=false;
+  statusEl.textContent="All deliveries completed. Truck returned to depot.";
+  playBeep();
+  return;
+ }
+
+ const targetNode=nodes[fullRoute[routeIndex]];
+ const dx=targetNode.x-currentPosition.x;
+ const dz=targetNode.z-currentPosition.z;
+
+ const distance=Math.sqrt(dx*dx+dz*dz);
+
+ if(distance<0.08){
+  currentPosition.x=targetNode.x;
+  currentPosition.z=targetNode.z;
+  truck.object3D.position.set(currentPosition.x,0,currentPosition.z);
+
+  // Reached a delivery point?
+  const delivery=deliveries.find(d=>d.node===targetNode.id);
+
+  if(delivery){
+   statusEl.textContent="Delivered to "+delivery.name;
+   playBeep();
+  }
+
+  routeIndex++;
+  progress=0;
+  return;
+ }
+
+ setTruckDirection(dx,dz);
+
+ // Move only along the current road segment.
+ const movement=Math.min(distance,dt*speed*3.0);
+
+ currentPosition.x+=(dx/distance)*movement;
+ currentPosition.z+=(dz/distance)*movement;
+
+ truck.object3D.position.set(currentPosition.x,0,currentPosition.z);
+
+ // Smooth wheel movement
+ const wheels=truck.querySelectorAll("a-cylinder");
+ wheels.forEach(w=>{
+  w.object3D.rotation.x+=movement*1.8;
+ });
+
+ statusEl.textContent=
+  "Driving on road | Junction "+routeIndex+
+  " of "+fullRoute.length;
+}
+
+/* =====================================================
+   CAMERA
+   ===================================================== */
+
+const cameraRig=document.getElementById("cameraRig");
+const camera=document.getElementById("camera");
+
+let cameraMode="follow";
+
+function setCamera(mode){
+ cameraMode=mode;
+
+ if(mode==="follow"){
+  camera.setAttribute("position","0 7 12");
+  camera.setAttribute("rotation","-25 0 0");
+ }
+ if(mode==="top"){
+  camera.setAttribute("position","0 45 0");
+  camera.setAttribute("rotation","-90 0 0");
+ }
+ if(mode==="overview"){
+  camera.setAttribute("position","0 55 65");
+  camera.setAttribute("rotation","-38 0 0");
+ }
+}
+
+function updateCamera(){
+ const p=truck.object3D.position;
+
+ if(cameraMode==="follow"){
+  // Position the camera behind the truck.
+  const yaw=truck.object3D.rotation.y;
+  const behindX=Math.sin(yaw)*12;
+  const behindZ=Math.cos(yaw)*12;
+
+  cameraRig.object3D.position.lerp(
+   new THREE.Vector3(p.x-behindX,0,p.z-behindZ),0.08
+  );
+ }
+ else if(cameraMode==="top"){
+  cameraRig.object3D.position.lerp(
+   new THREE.Vector3(p.x,0,p.z),0.08
+  );
+ }
+ else{
+  cameraRig.object3D.position.lerp(
+   new THREE.Vector3(0,0,0),0.04
+  );
+ }
+}
+
+/* =====================================================
+   SOUND: Web Audio API
+   Audio starts after user interaction.
+   ===================================================== */
+
+let audioContext=null;
+let engineOsc=null;
+let engineGain=null;
+
+function initialiseSound(){
+ if(audioContext) return;
+
+ audioContext=new (window.AudioContext||window.webkitAudioContext)();
+
+ engineOsc=audioContext.createOscillator();
+ engineGain=audioContext.createGain();
+
+ engineOsc.type="sawtooth";
+ engineOsc.frequency.value=65;
+ engineGain.gain.value=0;
+
+ engineOsc.connect(engineGain);
+ engineGain.connect(audioContext.destination);
+ engineOsc.start();
+}
+
+function updateSound(){
+ if(!soundEnabled || !audioContext) return;
+
+ const target=running?0.035:0;
+ engineGain.gain.setTargetAtTime(
+  target,audioContext.currentTime,0.15
+ );
+
+ engineOsc.frequency.setTargetAtTime(
+  running?65+speed*18:45,
+  audioContext.currentTime,0.15
+ );
+}
+
+function playBeep(){
+ if(!soundEnabled) return;
+
+ initialiseSound();
+
+ const osc=audioContext.createOscillator();
+ const gain=audioContext.createGain();
+
+ osc.frequency.value=850;
+ gain.gain.value=0.08;
+
+ osc.connect(gain);
+ gain.connect(audioContext.destination);
+
+ osc.start();
+ osc.stop(audioContext.currentTime+0.18);
+}
+
+function toggleSound(){
+ soundEnabled=!soundEnabled;
+ document.getElementById("soundButton").textContent=
+  soundEnabled?"Sound: ON":"Sound: OFF";
+
+ if(soundEnabled) initialiseSound();
+ updateSound();
+}
+
+/* =====================================================
+   BUTTONS AND KEYBOARD
+   ===================================================== */
+
+function startDelivery(){
+ initialiseSound();
+ if(audioContext && audioContext.state==="suspended"){
+  audioContext.resume();
+ }
+
+ if(routeIndex>=fullRoute.length){
+  resetSimulation();
+ }
+
+ running=true;
+ statusEl.textContent="Delivery started. Truck following road network.";
+ updateSound();
+}
+
+function stopDelivery(){
+ running=false;
+ statusEl.textContent="Truck stopped.";
+ updateSound();
+}
+
+function resetSimulation(){
+ running=false;
+ routeIndex=0;
+ progress=0;
+ currentPosition={x:-24,z:0};
+ truck.object3D.position.set(-24,0,0);
+ truck.object3D.rotation.set(0,0,0);
+
+ fullRoute=buildFullRoute();
+ drawRoute();
+
+ statusEl.textContent="Truck returned to depot. Ready to start.";
+ updateSound();
+}
+
+function setSpeed(value){
+ speed=value;
+ statusEl.textContent="Speed set to "+value+"x";
+}
+
+document.addEventListener("keydown",e=>{
+ const key=e.key.toLowerCase();
+
+ if(key==="w"){
+  speed=Math.min(3,speed+0.25);
+  e.preventDefault();
+ }
+ if(key==="s"){
+  speed=Math.max(0.25,speed-0.25);
+  e.preventDefault();
+ }
+ if(key===" "){
+  e.preventDefault();
+  if(running) stopDelivery();
+  else startDelivery();
+ }
+});
+
+/* =====================================================
+   MAIN ANIMATION LOOP
+   ===================================================== */
+
+function animate(time){
+ requestAnimationFrame(animate);
+
+ if(!lastTime) lastTime=time;
+
+ const dt=Math.min((time-lastTime)/1000,0.05);
+ lastTime=time;
+
+ moveTruck(dt);
+ updateCamera();
+ updateSound();
+}
+
+requestAnimationFrame(animate);
+
+// Initial camera view
+setCamera("overview");
+</script>
+</a-scene>
+</body>
+</html>
